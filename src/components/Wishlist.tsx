@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { addItem, applyPriceCheck, deleteItem, fetchProduct, listItems, updateItem, type Item } from '../lib/items'
@@ -14,7 +14,8 @@ export default function Wishlist({ session: _session }: { session: Session }) {
   const [link, setLink] = useState('')
   const [linkErr, setLinkErr] = useState('')
   const [fetching, setFetching] = useState(false)
-  const [form, setForm] = useState<{ initial: Partial<Item>; id?: string; note?: string } | null>(null)
+  const [form, setForm] = useState<{ key: number; initial: Partial<Item>; id?: string; note?: string } | null>(null)
+  const opened = useRef(0) // bumps whenever a form opens; a stale fetch result must not replace a newer form
   const [progress, setProgress] = useState<{ n: number; total: number } | null>(null)
   const [unchecked, setUnchecked] = useState<Set<string>>(new Set())
 
@@ -42,9 +43,12 @@ export default function Wishlist({ session: _session }: { session: Session }) {
     if (!url) return setLinkErr('Use a http or https link')
     setLinkErr('')
     setFetching(true)
+    const token = ++opened.current
     const p = await fetchProduct(url)
+    if (token !== opened.current) return
     setFetching(false)
     setForm({
+      key: token,
       initial: { url, store: storeFromUrl(url), title: p.title ?? '', image_url: p.imageUrl ?? null, price_cents: p.priceCents ?? null },
       note: p.title || p.imageUrl || p.priceCents !== undefined ? undefined : "Couldn't read this page. Fill in the details.",
     })
@@ -95,7 +99,7 @@ export default function Wishlist({ session: _session }: { session: Session }) {
         <button onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
       {form ? (
-        <ItemForm initial={form.initial} note={form.note} onSave={save} onCancel={() => setForm(null)} />
+        <ItemForm key={form.key} initial={form.initial} note={form.note} onSave={save} onCancel={() => setForm(null)} />
       ) : (
         <form className="add" onSubmit={startAdd}>
           <input aria-label="Product link" placeholder="Paste a product link…" value={link} onChange={(e) => setLink(e.target.value)} />
@@ -115,7 +119,7 @@ export default function Wishlist({ session: _session }: { session: Session }) {
       ) : (
         shown?.map((it) => (
           <div key={it.id}>
-            <ItemRow item={it} onToggleBought={toggle} onEdit={(i) => setForm({ initial: i, id: i.id })} onDelete={remove} />
+            <ItemRow item={it} onToggleBought={toggle} onEdit={(i) => { setFetching(false); setForm({ key: ++opened.current, initial: i, id: i.id }) }} onDelete={remove} />
             {unchecked.has(it.id) && <span className="muted">Couldn't check</span>}
           </div>
         ))

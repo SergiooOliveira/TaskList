@@ -9,13 +9,14 @@ const LINK_ERR = 'Use a http or https link'
 export default function ItemForm({ initial, note, onSave, onCancel }: {
   initial: Partial<Item>
   note?: string
-  onSave: (v: FormValues) => void
+  onSave: (v: FormValues) => void | Promise<unknown>
   onCancel: () => void
 }) {
   const [url, setUrl] = useState(initial.url ?? '')
   const [title, setTitle] = useState(initial.title ?? '')
   const [price, setPrice] = useState(initial.price_cents != null ? (initial.price_cents / 100).toFixed(2).replace('.', ',') : '')
   const [image, setImage] = useState(initial.image_url ?? '')
+  const [saving, setSaving] = useState(false)
   const [errs, setErrs] = useState<Record<string, string>>({})
 
   const submit = (e: React.FormEvent) => {
@@ -30,7 +31,10 @@ export default function ItemForm({ initial, note, onSave, onCancel }: {
     if (image.trim() && !img) e2.image = LINK_ERR
     setErrs(e2)
     if (Object.keys(e2).length || !u || cents === undefined) return
-    onSave({ url: u, title: title.trim(), image_url: img, store: storeFromUrl(u), price_cents: cents })
+    if (saving) return
+    setSaving(true)
+    Promise.resolve(onSave({ url: u, title: title.trim(), image_url: img, store: storeFromUrl(u), price_cents: cents }))
+      .finally(() => setSaving(false)) // re-enable on failure; on success the form unmounts
   }
 
   const field = (key: string, label: string, value: string, set: (v: string) => void) => (
@@ -51,7 +55,7 @@ export default function ItemForm({ initial, note, onSave, onCancel }: {
       {field('price', 'Price (€)', price, setPrice)}
       {field('image', 'Picture URL', image, setImage)}
       <div className="actions">
-        <button type="submit">Save</button>
+        <button type="submit" disabled={saving}>Save</button>
         <button type="button" onClick={onCancel}>Cancel</button>
       </div>
     </form>

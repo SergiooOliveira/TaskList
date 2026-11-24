@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ItemForm from './ItemForm'
 
 const setup = (initial = {}) => {
@@ -44,4 +44,16 @@ it('rejects an unparseable price and a bad picture URL', () => {
   save()
   expect(screen.getAllByText('Use a http or https link')).toHaveLength(1)
   expect(onSave).not.toHaveBeenCalled()
+})
+it('disables Save while saving so a double click saves once', async () => {
+  let done!: () => void
+  const onSave = vi.fn(() => new Promise<void>((r) => (done = r)))
+  render(<ItemForm initial={{ url: 'https://x.test/a', title: 'Cam' }} onSave={onSave} onCancel={vi.fn()} />)
+  const btn = screen.getByRole('button', { name: 'Save' })
+  fireEvent.click(btn)
+  fireEvent.click(btn)
+  expect(onSave).toHaveBeenCalledTimes(1)
+  expect(btn).toBeDisabled()
+  done()
+  await waitFor(() => expect(btn).toBeEnabled())
 })
