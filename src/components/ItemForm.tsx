@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { parsePrice } from '../lib/price'
 import { normalizeUrl, storeFromUrl } from '../lib/url'
 import type { Item } from '../lib/items'
@@ -17,6 +17,8 @@ export default function ItemForm({ initial, onSave, onCancel }: {
   const [image, setImage] = useState(initial.image_url ?? '')
   const [saving, setSaving] = useState(false)
   const [errs, setErrs] = useState<Record<string, string>>({})
+  const dialog = useRef<HTMLDialogElement>(null)
+  useEffect(() => dialog.current?.showModal(), [])
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,15 +49,20 @@ export default function ItemForm({ initial, onSave, onCancel }: {
   )
 
   return (
-    <form className="add form" onSubmit={submit} noValidate>
-      {field('url', 'Link', url, setUrl)}
-      {field('title', 'Name', title, setTitle)}
-      {field('price', 'Price (€)', price, setPrice)}
-      {field('image', 'Picture URL', image, setImage)}
-      <div className="row">
+    // Native modal dialog: traps focus, closes on Esc; a tap on the backdrop closes it too.
+    <dialog ref={dialog} className="modal" aria-label={initial.id ? 'Edit item' : 'Add item'} onClose={onCancel}
+      onClick={(e) => e.target === e.currentTarget && onCancel()}>
+      <form className="form" onSubmit={submit} noValidate>
+        <div className="row head">
+          <b>{initial.id ? 'Edit item' : 'Add item'}</b>
+          <button type="button" className="close" aria-label="Close" onClick={onCancel}>✕</button>
+        </div>
+        {field('url', 'Link', url, setUrl)}
+        {field('title', 'Name', title, setTitle)}
+        {field('price', 'Price (€)', price, setPrice)}
+        {field('image', 'Picture URL', image, setImage)}
         <button type="submit" disabled={saving}>Save</button>
-        <button type="button" onClick={onCancel}>Cancel</button>
-      </div>
-    </form>
+      </form>
+    </dialog>
   )
 }

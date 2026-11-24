@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { addItem, applyPriceCheck, deleteItem, listItems, updateItem, type Item } from '../lib/items'
-import { normalizeUrl, storeFromUrl } from '../lib/url'
 import ItemRow from './ItemRow'
 import ItemForm, { type FormValues } from './ItemForm'
 
@@ -11,8 +10,7 @@ export default function Wishlist({ session: _session }: { session: Session }) {
   const [loadFailed, setLoadFailed] = useState(false)
   const [showBought, setShowBought] = useState(false)
   const [error, setError] = useState('')
-  const [link, setLink] = useState('')
-  const [linkErr, setLinkErr] = useState('')
+  const [query, setQuery] = useState('')
   const [form, setForm] = useState<{ key: number; initial: Partial<Item>; id?: string } | null>(null)
   const opened = useRef(0) // a fresh key per opened form, so ItemForm never keeps another item's values
 
@@ -34,19 +32,10 @@ export default function Wishlist({ session: _session }: { session: Session }) {
   const remove = (it: Item) =>
     deleteItem(it.id).then(() => setItems((xs) => xs && xs.filter((x) => x.id !== it.id)), fail)
 
-  // Stores block automated page reads, so the link just pre-fills a form you complete by hand.
-  const startAdd = (e: React.FormEvent) => {
-    e.preventDefault()
-    const url = normalizeUrl(link)
-    if (!url) return setLinkErr('Use a http or https link')
-    setLinkErr('')
-    setForm({ key: ++opened.current, initial: { url, store: storeFromUrl(url) } })
-  }
   const save = (v: FormValues) => {
     const done = (u: Item) => {
       setItems((xs) => (form?.id ? xs && xs.map((x) => (x.id === u.id ? u : x)) : [u, ...(xs ?? [])]))
       setForm(null)
-      setLink('')
       if (!form?.id) setShowBought(false)
     }
     const old = form?.id ? items?.find((x) => x.id === form.id) : undefined
@@ -56,7 +45,8 @@ export default function Wishlist({ session: _session }: { session: Session }) {
       : v
     return (form?.id ? updateItem(form.id, patch) : addItem(v)).then(done, fail)
   }
-  const shown = items?.filter((i) => i.bought === showBought)
+  const q = query.trim().toLowerCase()
+  const shown = items?.filter((i) => i.bought === showBought && i.title.toLowerCase().includes(q))
 
   return (
     <>
@@ -68,15 +58,11 @@ export default function Wishlist({ session: _session }: { session: Session }) {
         </div>
         <button onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
-      {form ? (
-        <ItemForm key={form.key} initial={form.initial} onSave={save} onCancel={() => setForm(null)} />
-      ) : (
-        <form className="add" onSubmit={startAdd}>
-          <input aria-label="Product link" placeholder="Paste a product link…" value={link} onChange={(e) => setLink(e.target.value)} />
-          <button type="submit">Add</button>
-          {linkErr && <small role="alert"> {linkErr}</small>}
-        </form>
-      )}
+      <div className="add">
+        <input type="search" aria-label="Search" placeholder="Search…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <button type="button" onClick={() => setForm({ key: ++opened.current, initial: {} })}>Add</button>
+      </div>
+      {form && <ItemForm key={form.key} initial={form.initial} onSave={save} onCancel={() => setForm(null)} />}
       {error && <p role="alert">{error}</p>}
       {loadFailed ? (
         <div>
@@ -84,7 +70,7 @@ export default function Wishlist({ session: _session }: { session: Session }) {
           <button onClick={load}>Try again</button>
         </div>
       ) : shown?.length === 0 ? (
-        <p>{showBought ? 'Nothing bought yet.' : 'Nothing here yet. Paste a product link above.'}</p>
+        <p>{q ? 'No items match.' : showBought ? 'Nothing bought yet.' : 'Nothing here yet. Tap Add to start.'}</p>
       ) : (
         shown?.map((it) => (
           <ItemRow key={it.id} item={it} onToggleBought={toggle} onEdit={(i) => setForm({ key: ++opened.current, initial: i, id: i.id })} onDelete={remove} />

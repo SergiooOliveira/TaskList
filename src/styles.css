@@ -59,8 +59,17 @@ button { font: inherit; font-size: .8rem; cursor: pointer; color: var(--fg); bac
 button[type=submit] { background: var(--accent); color: var(--ink); font-weight: 600; }
 button:disabled { opacity: .5; cursor: default; }
 .seg button, .actions button { padding: 4px 8px; }
-.add:not(.form) { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.add:not(.form) { background: none; border: 0; padding: 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .add:not(.form) input { flex: 1; min-width: 0; margin: 0; }
 .add p, .form p { margin: 0; }
 .row { display: flex; gap: 8px; }
 .top > button:last-child { background: none; color: var(--muted); }
+
+/* Add/edit modal */
+.add > button { background: var(--accent); color: var(--ink); font-weight: 600; }
+.modal { width: min(100% - 32px, 480px); padding: 20px; border: 1px solid var(--hi); border-radius: 16px; color: var(--fg); background: var(--surface); }
+.modal::backdrop { background: rgb(5 12 9 / .7); backdrop-filter: blur(2px); }
+.modal .head { justify-content: space-between; align-items: center; }
+.modal .head b { font-family: var(--display); font-size: 1.1rem; }
+.modal .close { background: none; color: var(--muted); font-size: 1rem; padding: 4px 8px; }
+.modal button[type=submit] { width: 100%; padding: 10px; margin-top: 4px; }

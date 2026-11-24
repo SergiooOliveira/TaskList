@@ -22,12 +22,30 @@ beforeEach(() => {
   vi.mocked(items.updateItem).mockImplementation(async (id, patch) => ({ ...[A, B, C].find((i) => i.id === id)!, ...patch }) as Item)
 })
 
-it('Add opens the form with the link filled in and the other fields empty', async () => {
+it('Add opens an empty modal', async () => {
   show([])
-  fireEvent.change(screen.getByLabelText('Product link'), { target: { value: 'worten.pt/p/1' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
-  expect(await screen.findByLabelText('Link')).toHaveValue('https://worten.pt/p/1')
+  fireEvent.click(await screen.findByRole('button', { name: 'Add' }))
+  expect(screen.getByRole('dialog', { name: 'Add item' })).toBeInTheDocument()
+  expect(screen.getByLabelText('Link')).toHaveValue('')
   expect(screen.getByLabelText('Name')).toHaveValue('')
+})
+
+it('Close dismisses the modal without saving', async () => {
+  show([A])
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(items.updateItem).not.toHaveBeenCalled()
+})
+
+it('search filters the list by name', async () => {
+  show([A, B])
+  await screen.findByText('Alpha')
+  fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'bet' } })
+  expect(screen.queryByText('Alpha')).toBeNull()
+  expect(screen.getByText('Beta')).toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'zzz' } })
+  expect(screen.getByText('No items match.')).toBeInTheDocument()
 })
 
 it('editing item B after item A saves B with B\'s values', async () => {
@@ -51,9 +69,9 @@ it('after adding, switches to Not bought so the new item shows', async () => {
   show([C])
   fireEvent.click(await screen.findByRole('button', { name: 'Bought' }))
   vi.mocked(items.addItem).mockResolvedValue(mk('n', 'Newbie'))
-  fireEvent.change(screen.getByLabelText('Product link'), { target: { value: 'https://x.test/p' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
-  fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Newbie' } })
+  fireEvent.change(screen.getByLabelText('Link'), { target: { value: 'https://x.test/p' } })
+  fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Newbie' } })
   fireEvent.click(await screen.findByRole('button', { name: 'Save' }))
   expect(await screen.findByText('Newbie')).toBeInTheDocument()
 })
