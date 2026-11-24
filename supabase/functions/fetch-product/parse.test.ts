@@ -29,3 +29,7 @@ it('worten fixture', () => expect(parseProduct(fx('worten'))).toEqual({
 it('amazon fixture', () => expect(parseProduct(fx('amazon'))).toEqual({
   title: 'Amazon.es: Cafetera Nespresso Vertuo', imageUrl: 'https://m.media-amazon.com/images/I/nespresso.jpg', priceCents: 129999 }))
 it('blocked fixture', () => expect(parseProduct(fx('blocked'))).toEqual({}))
+it('invalid numeric entity does not throw', () =>
+  expect(parseProduct('<meta property="og:title" content="A&#1114112;B">')).toEqual({ title: 'A&#1114112;B' }))
+it('does not trust <title> without product signals', () =>
+  expect(parseProduct('<title>Just a moment...</title>')).toEqual({}))

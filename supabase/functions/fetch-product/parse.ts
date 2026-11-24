@@ -4,9 +4,10 @@ export { parsePrice }
 export type Product = { title?: string; imageUrl?: string; priceCents?: number }
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
+const cp = (n: number, orig: string) => (n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : orig)
 const decode = (s: string) =>
   s.replace(/&(?:#(\d+)|#x([0-9a-f]+)|(\w+));/gi, (m, d, h, n) =>
-    d ? String.fromCodePoint(+d) : h ? String.fromCodePoint(parseInt(h, 16)) : (ENTITIES[n.toLowerCase()] ?? m))
+    d || h ? cp(d ? +d : parseInt(h, 16), m) : (ENTITIES[n.toLowerCase()] ?? m))
 
 function meta(html: string, key: string): string | undefined {
   for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
@@ -42,10 +43,12 @@ function jsonLdPrice(html: string): number | undefined {
 }
 
 export function parseProduct(html: string): Product {
-  const title = meta(html, 'og:title') ??
-    (decode(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '').trim() || undefined)
   const imageUrl = meta(html, 'og:image')
   const metaPrice = meta(html, 'product:price:amount')
   const priceCents = jsonLdPrice(html) ?? (metaPrice ? parsePrice(metaPrice) : undefined)
+  // <title> is only trusted with some product signal; block pages ("Robot Check") have none.
+  const signal = imageUrl !== undefined || priceCents !== undefined
+  const title = meta(html, 'og:title') ??
+    (signal ? decode(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '').trim() || undefined : undefined)
   return Object.fromEntries(Object.entries({ title, imageUrl, priceCents }).filter(([, v]) => v !== undefined))
 }
