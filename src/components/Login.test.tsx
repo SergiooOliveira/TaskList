@@ -23,3 +23,10 @@ it('shows the error message', async () => {
   await submit()
   expect(await screen.findByText('Rate limited')).toBeInTheDocument()
 })
+
+it('recovers when the request rejects', async () => {
+  otp.mockRejectedValue(new Error('Network down'))
+  await submit()
+  expect(await screen.findByText('Network down')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Send login link' })).toBeEnabled()
+})

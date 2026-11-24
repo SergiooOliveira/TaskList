@@ -10,12 +10,17 @@ export default function Login() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setSending(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.href },
-    })
-    setMessage(error ? error.message : 'Check your email for the login link.')
-    setSending(false)
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.href },
+      })
+      setMessage(error ? error.message : 'Check your email for the login link.')
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Something went wrong')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
