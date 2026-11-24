@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { parsePrice } from '../../supabase/functions/_shared/price.ts'
-import { normalizeUrl, storeFromUrl } from '../../supabase/functions/_shared/url.ts'
+import { parsePrice } from '../lib/price'
+import { normalizeUrl, storeFromUrl } from '../lib/url'
 import type { Item } from '../lib/items'
 
 export type FormValues = Pick<Item, 'url' | 'title' | 'image_url' | 'store' | 'price_cents'>
 const LINK_ERR = 'Use a http or https link'
 
-export default function ItemForm({ initial, note, onSave, onCancel }: {
+export default function ItemForm({ initial, onSave, onCancel }: {
   initial: Partial<Item>
-  note?: string
   onSave: (v: FormValues) => void | Promise<unknown>
   onCancel: () => void
 }) {
@@ -49,7 +48,6 @@ export default function ItemForm({ initial, note, onSave, onCancel }: {
 
   return (
     <form className="add form" onSubmit={submit} noValidate>
-      {note && <p className="muted">{note}</p>}
       {field('url', 'Link', url, setUrl)}
       {field('title', 'Name', title, setTitle)}
       {field('price', 'Price (€)', price, setPrice)}

@@ -1,5 +1,4 @@
 import { supabase } from './supabase'
-import type { Product } from '../../supabase/functions/fetch-product/parse.ts'
 
 export type Item = {
   id: string
@@ -52,12 +51,3 @@ export const dropPercent = (prev: number, cur: number) => Math.round((1 - cur / 
 
 const eur = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' })
 export const formatEuro = (cents: number) => eur.format(cents / 100)
-
-export async function fetchProduct(url: string): Promise<Product> {
-  try {
-    const { data, error } = await supabase.functions.invoke('fetch-product', { body: { url } })
-    return error || !data ? {} : (data as Product)
-  } catch {
-    return {}
-  }
-}

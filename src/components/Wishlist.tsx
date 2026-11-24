@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { addItem, applyPriceCheck, deleteItem, fetchProduct, listItems, updateItem, type Item } from '../lib/items'
-import { normalizeUrl, storeFromUrl } from '../../supabase/functions/_shared/url.ts'
+import { addItem, applyPriceCheck, deleteItem, listItems, updateItem, type Item } from '../lib/items'
+import { normalizeUrl, storeFromUrl } from '../lib/url'
 import ItemRow from './ItemRow'
 import ItemForm, { type FormValues } from './ItemForm'
 
@@ -13,11 +13,8 @@ export default function Wishlist({ session: _session }: { session: Session }) {
   const [error, setError] = useState('')
   const [link, setLink] = useState('')
   const [linkErr, setLinkErr] = useState('')
-  const [fetching, setFetching] = useState(false)
-  const [form, setForm] = useState<{ key: number; initial: Partial<Item>; id?: string; note?: string } | null>(null)
-  const opened = useRef(0) // bumps whenever a form opens; a stale fetch result must not replace a newer form
-  const [progress, setProgress] = useState<{ n: number; total: number } | null>(null)
-  const [unchecked, setUnchecked] = useState<Set<string>>(new Set())
+  const [form, setForm] = useState<{ key: number; initial: Partial<Item>; id?: string } | null>(null)
+  const opened = useRef(0) // a fresh key per opened form, so ItemForm never keeps another item's values
 
   const load = useCallback(() => {
     setLoadFailed(false)
@@ -37,21 +34,13 @@ export default function Wishlist({ session: _session }: { session: Session }) {
   const remove = (it: Item) =>
     deleteItem(it.id).then(() => setItems((xs) => xs && xs.filter((x) => x.id !== it.id)), fail)
 
-  const startAdd = async (e: React.FormEvent) => {
+  // Stores block automated page reads, so the link just pre-fills a form you complete by hand.
+  const startAdd = (e: React.FormEvent) => {
     e.preventDefault()
     const url = normalizeUrl(link)
     if (!url) return setLinkErr('Use a http or https link')
     setLinkErr('')
-    setFetching(true)
-    const token = ++opened.current
-    const p = await fetchProduct(url)
-    if (token !== opened.current) return
-    setFetching(false)
-    setForm({
-      key: token,
-      initial: { url, store: storeFromUrl(url), title: p.title ?? '', image_url: p.imageUrl ?? null, price_cents: p.priceCents ?? null },
-      note: p.title || p.imageUrl || p.priceCents !== undefined ? undefined : "Couldn't read this page. Fill in the details.",
-    })
+    setForm({ key: ++opened.current, initial: { url, store: storeFromUrl(url) } })
   }
   const save = (v: FormValues) => {
     const done = (u: Item) => {
@@ -61,29 +50,12 @@ export default function Wishlist({ session: _session }: { session: Session }) {
       if (!form?.id) setShowBought(false)
     }
     const old = form?.id ? items?.find((x) => x.id === form.id) : undefined
-    const patch = old && v.price_cents !== old.price_cents ? { ...v, previous_price_cents: null } : v
+    // A lower price typed by hand keeps the old one, so the row shows the drop; a higher or cleared price drops it.
+    const patch = old && v.price_cents !== old.price_cents
+      ? { ...v, ...(applyPriceCheck(old, v.price_cents ?? undefined) ?? { previous_price_cents: null }) }
+      : v
     return (form?.id ? updateItem(form.id, patch) : addItem(v)).then(done, fail)
   }
-  const checkPrices = async () => {
-    const todo = (items ?? []).filter((i) => !i.bought)
-    setUnchecked(new Set())
-    for (const [n, it] of todo.entries()) {
-      setProgress({ n: n + 1, total: todo.length })
-      try {
-        const { priceCents } = await fetchProduct(it.url)
-        const patch = applyPriceCheck(it, priceCents)
-        if (!patch) setUnchecked((s) => new Set(s).add(it.id))
-        else {
-          const u = await updateItem(it.id, patch)
-          setItems((xs) => xs && xs.map((x) => (x.id === u.id ? u : x)))
-        }
-      } catch (e) {
-        fail(e)
-      }
-    }
-    setProgress(null)
-  }
-
   const shown = items?.filter((i) => i.bought === showBought)
 
   return (
@@ -94,20 +66,14 @@ export default function Wishlist({ session: _session }: { session: Session }) {
           <button aria-pressed={!showBought} onClick={() => setShowBought(false)}>Not bought</button>
           <button aria-pressed={showBought} onClick={() => setShowBought(true)}>Bought</button>
         </div>
-        {!showBought && (
-          <button onClick={checkPrices} disabled={!!progress}>
-            {progress ? `Checking ${progress.n} of ${progress.total}…` : 'Check prices'}
-          </button>
-        )}
         <button onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
       {form ? (
-        <ItemForm key={form.key} initial={form.initial} note={form.note} onSave={save} onCancel={() => setForm(null)} />
+        <ItemForm key={form.key} initial={form.initial} onSave={save} onCancel={() => setForm(null)} />
       ) : (
         <form className="add" onSubmit={startAdd}>
           <input aria-label="Product link" placeholder="Paste a product link…" value={link} onChange={(e) => setLink(e.target.value)} />
-          <button type="submit" disabled={fetching}>Add</button>
-          {fetching && <span> Fetching…</span>}
+          <button type="submit">Add</button>
           {linkErr && <small role="alert"> {linkErr}</small>}
         </form>
       )}
@@ -121,10 +87,7 @@ export default function Wishlist({ session: _session }: { session: Session }) {
         <p>{showBought ? 'Nothing bought yet.' : 'Nothing here yet. Paste a product link above.'}</p>
       ) : (
         shown?.map((it) => (
-          <div key={it.id}>
-            <ItemRow item={it} onToggleBought={toggle} onEdit={(i) => { setFetching(false); setForm({ key: ++opened.current, initial: i, id: i.id }) }} onDelete={remove} />
-            {unchecked.has(it.id) && <span className="muted">Couldn't check</span>}
-          </div>
+          <ItemRow key={it.id} item={it} onToggleBought={toggle} onEdit={(i) => setForm({ key: ++opened.current, initial: i, id: i.id })} onDelete={remove} />
         ))
       )}
     </>
