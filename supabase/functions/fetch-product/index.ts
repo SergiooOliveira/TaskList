@@ -31,16 +31,20 @@ Deno.serve(async (req) => {
 
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': UA },
+      headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml', 'Accept-Language': 'pt-PT,pt;q=0.9,en;q=0.8' },
       redirect: 'follow',
       signal: AbortSignal.timeout(10_000),
     });
-    if (!res.ok) return json({});
-    const p = parseProduct(await res.text());
+    // Logged so the Supabase function logs show whether a store blocks us or the parser misses its markup.
+    if (!res.ok) { console.log('store refused', res.status, url); return json({}); }
+    const html = await res.text();
+    const p = parseProduct(html);
+    console.log('fetched', res.status, url, 'bytes', html.length, 'page title', html.match(/<title[^>]*>([^<]{0,80})/i)?.[1], 'found', Object.keys(p));
     let imageUrl: string | undefined;
     try { imageUrl = p.imageUrl ? new URL(p.imageUrl, res.url).href : undefined; } catch { /* drop unusable image */ }
     return json({ ...p, imageUrl });
-  } catch {
+  } catch (e) {
+    console.log('fetch failed', url, String(e));
     return json({});
   }
 });
