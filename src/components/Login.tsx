@@ -3,62 +3,58 @@ import { supabase } from '../lib/supabase'
 
 export default function Login() {
   const [email, setEmail] = useState('')
-  const [sending, setSending] = useState(false)
-  const [message, setMessage] = useState('')
-  const [sent, setSent] = useState(false)
   const [token, setToken] = useState('')
+  const [sent, setSent] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
 
-  async function submit(e: React.FormEvent) {
+  // Runs one auth call with the busy flag and error message handled the same way for both steps.
+  const run = async (e: React.FormEvent, call: () => Promise<{ error: { message: string } | null }>, onOk?: () => void) => {
     e.preventDefault()
-    setSending(true)
+    setBusy(true)
+    setMessage('')
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.origin + import.meta.env.BASE_URL },
-      })
-      setMessage(error ? error.message : 'Check your email for the login link.')
-      if (!error) setSent(true)
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Something went wrong')
-    } finally {
-      setSending(false)
-    }
-  }
-
-  // iPhone home-screen apps can't receive the magic-link session, so also accept the emailed code.
-  async function verify(e: React.FormEvent) {
-    e.preventDefault()
-    setSending(true)
-    try {
-      const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+      const { error } = await call()
       if (error) setMessage(error.message)
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Something went wrong')
+      else onOk?.()
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
-      setSending(false)
+      setBusy(false)
     }
   }
+
+  const sendCode = (e: React.FormEvent) => run(e, () => supabase.auth.signInWithOtp({ email }), () => setSent(true))
+  const verify = (e: React.FormEvent) =>
+    run(e, () => supabase.auth.verifyOtp({ email, token: token.trim(), type: 'email' }))
 
   return (
-    <>
+    <div className="login">
       <h1>Wishlist</h1>
-      <form className="add form" onSubmit={submit}>
-        <label>
-          Email
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label>
-        <button type="submit" disabled={sending}>Send login link</button>
-      </form>
-      {sent && (
-        <form className="add form" onSubmit={verify}>
+      <p className="tagline">The things you want, in one calm place.</p>
+      {!sent ? (
+        <form className="add form" onSubmit={sendCode}>
           <label>
-            Or enter the 6-digit code
-            <input inputMode="numeric" autoComplete="one-time-code" required value={token} onChange={(e) => setToken(e.target.value)} />
+            Email
+            <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </label>
-          <button type="submit" disabled={sending}>Sign in</button>
+          <button type="submit" disabled={busy}>Send code</button>
+        </form>
+      ) : (
+        <form className="add form" onSubmit={verify}>
+          <p className="muted">We sent a sign-in code to {email}.</p>
+          <label>
+            Code
+            <input className="code" inputMode="numeric" autoComplete="one-time-code" required autoFocus
+              value={token} onChange={(e) => setToken(e.target.value)} />
+          </label>
+          <button type="submit" disabled={busy}>Sign in</button>
+          <button type="button" className="link" onClick={() => { setSent(false); setToken(''); setMessage('') }}>
+            Use a different email
+          </button>
         </form>
       )}
       {message && <p role="status">{message}</p>}
-    </>
+    </div>
   )
 }

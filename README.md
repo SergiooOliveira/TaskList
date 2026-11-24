@@ -18,7 +18,8 @@ npm test
 **Supabase**
 1. Create a project and run `supabase/migrations/0001_items.sql` in the SQL editor.
 2. Under Authentication > URL Configuration, set the Site URL to your GitHub Pages URL and add `http://localhost:5173/TaskList/` and the Pages URL to the redirect URLs.
-3. Under Authentication > Email Templates > Magic Link, add `{{ .Token }}` to the email so the 6-digit code appears (needed to sign in from an iPhone home-screen app, which can't receive the link).
+3. Sign-in is by emailed code. Set up custom SMTP (Authentication > Emails > SMTP Settings), then make the Magic Link template body show only the code: `<p>Your sign-in code: <strong>{{ .Token }}</strong></p>`.
+4. Optional, for a personal app: Authentication > Sign In / Providers > turn off "Allow new users to sign up" once your own account exists.
 
 **GitHub Pages**
 1. Make the repository public.

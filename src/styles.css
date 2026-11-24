@@ -73,3 +73,12 @@ button:disabled { opacity: .5; cursor: default; }
 .modal .head b { font-family: var(--display); font-size: 1.1rem; }
 .modal .close { background: none; color: var(--muted); font-size: 1rem; padding: 4px 8px; }
 .modal button[type=submit] { width: 100%; padding: 10px; margin-top: 4px; }
+
+/* Sign-in screen */
+.login { min-height: 80dvh; display: grid; align-content: center; gap: 12px; }
+.login h1 { font-size: 2.5rem; margin: 0; }
+.login .tagline { margin: 0 0 8px; color: var(--muted); }
+.login .code { font-size: 1.4rem; letter-spacing: .4em; text-align: center; font-variant-numeric: tabular-nums; }
+.login .add { padding: 16px; }
+.login .add p { margin: 0; }
+button.link { background: none; color: var(--muted); padding: 4px; text-decoration: underline; }
