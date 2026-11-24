@@ -43,3 +43,9 @@ it('confirms delete inline', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
   expect(onDelete).toHaveBeenCalledWith(item)
 })
+it('retries the image after image_url changes', () => {
+  const { container, rerender } = show()
+  fireEvent.error(container.querySelector('img')!)
+  rerender(<ItemRow item={{ ...item, image_url: 'https://x.test/b.jpg' }} onToggleBought={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />)
+  expect(container.querySelector('img')).toHaveAttribute('src', 'https://x.test/b.jpg')
+})

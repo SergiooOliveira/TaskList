@@ -9,15 +9,15 @@ type Props = {
 }
 
 export default function ItemRow({ item, onToggleBought, onEdit, onDelete }: Props) {
-  const [broken, setBroken] = useState(false)
+  const [brokenUrl, setBrokenUrl] = useState<string | null>(null) // remembers which URL failed, so a new URL retries
   const [confirming, setConfirming] = useState(false)
   const { price_cents: cur, previous_price_cents: prev } = item
   const dropped = cur !== null && prev !== null && prev > cur
 
   return (
     <div className="item">
-      {item.image_url && !broken ? (
-        <img className="thumb" src={item.image_url} alt="" onError={() => setBroken(true)} />
+      {item.image_url && item.image_url !== brokenUrl ? (
+        <img className="thumb" src={item.image_url} alt="" onError={() => setBrokenUrl(item.image_url)} />
       ) : (
         <div className="thumb" aria-hidden="true">{item.title.charAt(0).toUpperCase()}</div>
       )}

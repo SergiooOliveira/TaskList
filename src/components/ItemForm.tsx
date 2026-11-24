@@ -1,0 +1,59 @@
+import { useState } from 'react'
+import { parsePrice } from '../../supabase/functions/_shared/price.ts'
+import { normalizeUrl, storeFromUrl } from '../../supabase/functions/_shared/url.ts'
+import type { Item } from '../lib/items'
+
+export type FormValues = Pick<Item, 'url' | 'title' | 'image_url' | 'store' | 'price_cents'>
+const LINK_ERR = 'Use a http or https link'
+
+export default function ItemForm({ initial, note, onSave, onCancel }: {
+  initial: Partial<Item>
+  note?: string
+  onSave: (v: FormValues) => void
+  onCancel: () => void
+}) {
+  const [url, setUrl] = useState(initial.url ?? '')
+  const [title, setTitle] = useState(initial.title ?? '')
+  const [price, setPrice] = useState(initial.price_cents != null ? (initial.price_cents / 100).toFixed(2).replace('.', ',') : '')
+  const [image, setImage] = useState(initial.image_url ?? '')
+  const [errs, setErrs] = useState<Record<string, string>>({})
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const e2: Record<string, string> = {}
+    const u = normalizeUrl(url)
+    if (!u) e2.url = LINK_ERR
+    if (!title.trim()) e2.title = 'Add a name'
+    const cents = price.trim() ? parsePrice(price) : null
+    if (cents === undefined) e2.price = 'Use a price like 12,99'
+    const img = image.trim() ? normalizeUrl(image) : null
+    if (image.trim() && !img) e2.image = LINK_ERR
+    setErrs(e2)
+    if (Object.keys(e2).length || !u || cents === undefined) return
+    onSave({ url: u, title: title.trim(), image_url: img, store: storeFromUrl(u), price_cents: cents })
+  }
+
+  const field = (key: string, label: string, value: string, set: (v: string) => void) => (
+    <div>
+      <label>
+        {label}
+        <input value={value} onChange={(e) => set(e.target.value)} aria-invalid={!!errs[key]} />
+      </label>
+      {errs[key] && <small role="alert">{errs[key]}</small>}
+    </div>
+  )
+
+  return (
+    <form className="add form" onSubmit={submit} noValidate>
+      {note && <p>{note}</p>}
+      {field('url', 'Link', url, setUrl)}
+      {field('title', 'Name', title, setTitle)}
+      {field('price', 'Price (€)', price, setPrice)}
+      {field('image', 'Picture URL', image, setImage)}
+      <div className="actions">
+        <button type="submit">Save</button>
+        <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </form>
+  )
+}
