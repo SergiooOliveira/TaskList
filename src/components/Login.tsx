@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import Background from './Background'
 import { supabase } from '../lib/supabase'
 
 export default function Login() {
@@ -41,10 +40,9 @@ export default function Login() {
   }
 
   return (
-    <div className="mock">
-      <Background />
+    <>
       <h1>Wishlist</h1>
-      <form onSubmit={submit}>
+      <form className="add form" onSubmit={submit}>
         <label>
           Email
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -52,7 +50,7 @@ export default function Login() {
         <button type="submit" disabled={sending}>Send login link</button>
       </form>
       {sent && (
-        <form onSubmit={verify}>
+        <form className="add form" onSubmit={verify}>
           <label>
             Or enter the 6-digit code
             <input inputMode="numeric" autoComplete="one-time-code" required value={token} onChange={(e) => setToken(e.target.value)} />
@@ -61,6 +59,6 @@ export default function Login() {
         </form>
       )}
       {message && <p role="status">{message}</p>}
-    </div>
+    </>
   )
 }

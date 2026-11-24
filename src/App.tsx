@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import Login from './components/Login'
 import Wishlist from './components/Wishlist'
+import Background from './components/Background'
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -18,6 +19,10 @@ export default function App() {
     return () => data.subscription.unsubscribe()
   }, [])
 
-  if (!ready) return null
-  return session ? <Wishlist session={session} /> : <Login />
+  return (
+    <div className="mock">
+      <Background />
+      {ready && (session ? <Wishlist session={session} /> : <Login />)}
+    </div>
+  )
 }

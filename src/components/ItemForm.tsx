@@ -49,12 +49,12 @@ export default function ItemForm({ initial, note, onSave, onCancel }: {
 
   return (
     <form className="add form" onSubmit={submit} noValidate>
-      {note && <p>{note}</p>}
+      {note && <p className="muted">{note}</p>}
       {field('url', 'Link', url, setUrl)}
       {field('title', 'Name', title, setTitle)}
       {field('price', 'Price (€)', price, setPrice)}
       {field('image', 'Picture URL', image, setImage)}
-      <div className="actions">
+      <div className="row">
         <button type="submit" disabled={saving}>Save</button>
         <button type="button" onClick={onCancel}>Cancel</button>
       </div>
