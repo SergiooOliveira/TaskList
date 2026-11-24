@@ -48,6 +48,8 @@ The approved mock is in [`2026-11-24-wishlist-look.html`](2026-11-24-wishlist-lo
 ## How it's built (decided)
 
 - **React + Supabase.**
+- **Hosting: GitHub Pages.** The repo becomes public so the user can show it as portfolio work. A GitHub Actions workflow builds and deploys the app on every push to `main`. The app is served at `/TaskList/`, so Vite's `base` is set to match.
+- **Public repo means:** the Supabase URL and anon key in the web app are public by design, and row-level security is what protects the data. The Supabase `service_role` key and any other secret never go in the repo.
 
 ## Builder's calls (proposed by Claude; the user can override)
 
@@ -64,7 +66,6 @@ The approved mock is in [`2026-11-24-wishlist-look.html`](2026-11-24-wishlist-lo
   It returns whatever it found (any field may be empty). The page itself never fetches store sites, because browsers block that.
 - **Check prices:** the client calls `fetch-product` for each not-bought item, one at a time, and updates prices. A failure on one item is shown on that row and doesn't stop the rest.
 - **Images:** shown straight from the store's image URL. Shortcut: if a store blocks hotlinking, copy images into Supabase Storage.
-- **Hosting:** Vercel free tier for the web app.
 - **Install:** a web app manifest and icons. No offline mode.
 - **Tests:** Vitest unit tests for the HTML parsing (picture, name and price extraction), using saved sample pages. This is the part most likely to break.
 
