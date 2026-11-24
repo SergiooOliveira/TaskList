@@ -18,3 +18,6 @@ create policy "own items" on items
   for all
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
+
+-- Explicit so logged-in users can reach the table through the API even if the project does not grant it by default.
+grant select, insert, update, delete on items to authenticated;
