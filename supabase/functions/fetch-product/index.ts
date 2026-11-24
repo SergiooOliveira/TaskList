@@ -1,3 +1,4 @@
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { normalizeUrl } from '../_shared/url.ts';
 import { parseProduct } from './parse.ts';
 
@@ -11,6 +12,14 @@ const json = (body: unknown, status = 200) =>
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+
+  // Only signed-in users may use the fetcher (the anon key alone is public).
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
+  });
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) return json({ error: 'Sign in first' }, 401);
+
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   let url: string | null = null;
@@ -27,7 +36,10 @@ Deno.serve(async (req) => {
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return json({});
-    return json(parseProduct(await res.text()));
+    const p = parseProduct(await res.text());
+    let imageUrl: string | undefined;
+    try { imageUrl = p.imageUrl ? new URL(p.imageUrl, res.url).href : undefined; } catch { /* drop unusable image */ }
+    return json({ ...p, imageUrl });
   } catch {
     return json({});
   }

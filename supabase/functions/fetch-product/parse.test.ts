@@ -33,3 +33,6 @@ it('invalid numeric entity does not throw', () =>
   expect(parseProduct('<meta property="og:title" content="A&#1114112;B">')).toEqual({ title: 'A&#1114112;B' }))
 it('does not trust <title> without product signals', () =>
   expect(parseProduct('<title>Just a moment...</title>')).toEqual({}))
+
+it.each([['29.9900', 2999], ['1299.000', 129900]])('JSON-LD machine price %s = %i cents', (p, c) =>
+  expect(parseProduct(`<script type="application/ld+json">{"@type":"Product","offers":{"price":"${p}"}}</script>`).priceCents).toBe(c))

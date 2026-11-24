@@ -58,8 +58,11 @@ export default function Wishlist({ session: _session }: { session: Session }) {
       setItems((xs) => (form?.id ? xs && xs.map((x) => (x.id === u.id ? u : x)) : [u, ...(xs ?? [])]))
       setForm(null)
       setLink('')
+      if (!form?.id) setShowBought(false)
     }
-    return (form?.id ? updateItem(form.id, v) : addItem(v)).then(done, fail)
+    const old = form?.id ? items?.find((x) => x.id === form.id) : undefined
+    const patch = old && v.price_cents !== old.price_cents ? { ...v, previous_price_cents: null } : v
+    return (form?.id ? updateItem(form.id, patch) : addItem(v)).then(done, fail)
   }
   const checkPrices = async () => {
     const todo = (items ?? []).filter((i) => !i.bought)

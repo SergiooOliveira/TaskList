@@ -1,6 +1,11 @@
 import { parsePrice } from '../_shared/price.ts'
 
 export { parsePrice }
+
+// Machine formats (JSON-LD, meta) use "." as decimal point, so "1299.000" is 1299, not 1.299.
+const machinePrice = (v: string | number): number | undefined =>
+  typeof v === 'string' && /^\d+(\.\d+)?$/.test(v.trim()) ? Math.round(Number(v) * 100) : parsePrice(v)
+
 export type Product = { title?: string; imageUrl?: string; priceCents?: number }
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
@@ -35,7 +40,7 @@ function jsonLdPrice(html: string): number | undefined {
       const product = findProduct(JSON.parse(m[1]))
       for (const o of [product?.offers].flat()) {
         const raw = o?.price ?? o?.lowPrice
-        const cents = raw === undefined ? undefined : parsePrice(raw)
+        const cents = raw === undefined ? undefined : machinePrice(raw)
         if (cents !== undefined) return cents
       }
     } catch { /* malformed JSON-LD: ignore */ }
@@ -45,7 +50,7 @@ function jsonLdPrice(html: string): number | undefined {
 export function parseProduct(html: string): Product {
   const imageUrl = meta(html, 'og:image')
   const metaPrice = meta(html, 'product:price:amount')
-  const priceCents = jsonLdPrice(html) ?? (metaPrice ? parsePrice(metaPrice) : undefined)
+  const priceCents = jsonLdPrice(html) ?? (metaPrice ? machinePrice(metaPrice) : undefined)
   // <title> is only trusted with some product signal; block pages ("Robot Check") have none.
   const signal = imageUrl !== undefined || priceCents !== undefined
   const title = meta(html, 'og:title') ??

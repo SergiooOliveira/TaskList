@@ -4,6 +4,7 @@ describe('url helpers', () => {
   it('normalizes', () => {
     expect(normalizeUrl(' worten.pt/p/123 ')).toBe('https://worten.pt/p/123');
     expect(normalizeUrl('https://www.fnac.pt/a')).toBe('https://www.fnac.pt/a');
+    expect(normalizeUrl('worten.pt')).toBe('https://worten.pt/');
     expect(normalizeUrl('javascript:alert(1)')).toBeNull();
     expect(normalizeUrl('file:///etc/passwd')).toBeNull();
     expect(normalizeUrl('')).toBeNull();

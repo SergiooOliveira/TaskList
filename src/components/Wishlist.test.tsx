@@ -86,3 +86,27 @@ describe('Check prices', () => {
     expect(screen.queryByRole('button', { name: 'Check prices' })).toBeNull()
   })
 })
+
+it('after adding, switches to Not bought so the new item shows', async () => {
+  show([C])
+  fireEvent.click(await screen.findByRole('button', { name: 'Bought' }))
+  vi.mocked(items.fetchProduct).mockResolvedValue({ title: 'Newbie' })
+  vi.mocked(items.addItem).mockResolvedValue(mk('n', 'Newbie'))
+  fireEvent.change(screen.getByLabelText('Product link'), { target: { value: 'https://x.test/p' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Save' }))
+  expect(await screen.findByText('Newbie')).toBeInTheDocument()
+})
+
+it('editing the price clears previous_price_cents; other edits do not', async () => {
+  show([A])
+  await screen.findByText('Alpha')
+  fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(items.updateItem).toHaveBeenCalledTimes(1))
+  expect(vi.mocked(items.updateItem).mock.calls[0][1]).not.toHaveProperty('previous_price_cents')
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
+  fireEvent.change(screen.getByLabelText(/price/i), { target: { value: '9,99' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(items.updateItem).toHaveBeenLastCalledWith('a', expect.objectContaining({ price_cents: 999, previous_price_cents: null })))
+})

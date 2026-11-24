@@ -17,8 +17,9 @@ npm test
 
 **Supabase**
 1. Create a project and run `supabase/migrations/0001_items.sql` in the SQL editor.
-2. Deploy the product fetcher: `npx supabase functions deploy fetch-product`.
-3. Under Authentication > URL Configuration, add `http://localhost:5173/TaskList/` and your published Pages URL to the redirect URLs.
+2. Deploy the product fetcher: `npx supabase login`, then `npx supabase link --project-ref <your-project-ref>`, then `npx supabase functions deploy fetch-product`.
+3. Under Authentication > URL Configuration, set the Site URL to your GitHub Pages URL and add `http://localhost:5173/TaskList/` and the Pages URL to the redirect URLs.
+4. Under Authentication > Email Templates > Magic Link, add `{{ .Token }}` to the email so the 6-digit code appears (needed to sign in from an iPhone home-screen app, which can't receive the link).
 
 **GitHub Pages**
 1. Make the repository public.
