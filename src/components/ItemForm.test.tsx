@@ -57,10 +57,20 @@ it('disables Save while saving so a double click saves once', async () => {
   done()
   await waitFor(() => expect(btn).toBeEnabled())
 })
-it('saves the type trimmed, and suggests existing types', () => {
+it('shows existing types; tapping one fills the Type field', () => {
   const onSave = vi.fn()
   render(<ItemForm initial={{ url: 'https://x.test/a', title: 'Cam' }} types={['Books', 'Vinyls']} onSave={onSave} onCancel={vi.fn()} />)
-  expect(document.querySelectorAll('#types option')).toHaveLength(2)
+  fireEvent.click(screen.getByRole('button', { name: 'Vinyls' }))
+  expect(screen.getByLabelText('Type')).toHaveValue('Vinyls')
+  expect(screen.getByRole('button', { name: 'Vinyls' })).toHaveAttribute('aria-pressed', 'true')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ category: 'Vinyls' }))
+})
+
+it('saves a typed type trimmed', () => {
+  const onSave = vi.fn()
+  render(<ItemForm initial={{ url: 'https://x.test/a', title: 'Cam' }} onSave={onSave} onCancel={vi.fn()} />)
+  expect(screen.queryByRole('group', { name: 'Existing types' })).toBeNull()
   fireEvent.change(screen.getByLabelText('Type'), { target: { value: '  Vinyls ' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ category: 'Vinyls' }))

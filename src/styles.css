@@ -87,3 +87,4 @@ button.link { background: none; color: var(--muted); padding: 4px; text-decorati
 .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
 .chips button { flex: none; padding: 5px 12px; color: var(--muted); background: color-mix(in srgb, var(--surface) 85%, transparent); }
 .chips [aria-pressed=true] { background: var(--hi); color: var(--sale); font-weight: 600; }
+.modal .chips button:not([aria-pressed=true]) { background: color-mix(in srgb, var(--bg) 70%, transparent); }

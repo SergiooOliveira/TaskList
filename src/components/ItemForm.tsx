@@ -40,11 +40,11 @@ export default function ItemForm({ initial, types = [], onSave, onCancel }: {
       .finally(() => setSaving(false)) // re-enable on failure; on success the form unmounts
   }
 
-  const field = (key: string, label: string, value: string, set: (v: string) => void, list?: string) => (
+  const field = (key: string, label: string, value: string, set: (v: string) => void) => (
     <div>
       <label>
         {label}
-        <input value={value} onChange={(e) => set(e.target.value)} aria-invalid={!!errs[key]} list={list} />
+        <input value={value} onChange={(e) => set(e.target.value)} aria-invalid={!!errs[key]} />
       </label>
       {errs[key] && <small role="alert">{errs[key]}</small>}
     </div>
@@ -62,8 +62,15 @@ export default function ItemForm({ initial, types = [], onSave, onCancel }: {
         {field('url', 'Link', url, setUrl)}
         {field('title', 'Name', title, setTitle)}
         {field('price', 'Price (€)', price, setPrice)}
-        {field('category', 'Type', category, setCategory, 'types')}
-        <datalist id="types">{types.map((t) => <option key={t} value={t} />)}</datalist>
+        {field('category', 'Type', category, setCategory)}
+        {types.length > 0 && (
+          // Existing types stay visible so a near-duplicate ("Vinyl" vs "Vinyls") is easy to avoid.
+          <div className="chips" role="group" aria-label="Existing types">
+            {types.map((t) => (
+              <button key={t} type="button" aria-pressed={t.toLowerCase() === category.trim().toLowerCase()} onClick={() => setCategory(t)}>{t}</button>
+            ))}
+          </div>
+        )}
         {field('image', 'Picture URL', image, setImage)}
         <button type="submit" disabled={saving}>Save</button>
       </form>
