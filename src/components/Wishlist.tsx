@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { addItem, applyPriceCheck, deleteItem, listItems, updateItem, type Item } from '../lib/items'
 import ItemRow from './ItemRow'
+import { typeColor } from '../lib/typeColor'
 import ItemForm, { type FormValues } from './ItemForm'
 
 export default function Wishlist({ session: _session }: { session: Session }) {
@@ -72,7 +73,10 @@ export default function Wishlist({ session: _session }: { session: Session }) {
       {types.length > 0 && (
         <div className="chips" role="group" aria-label="Filter by type">
           {[null, ...types].map((t) => (
-            <button key={t ?? ''} aria-pressed={active === t} onClick={() => setType(t)}>{t ?? 'All'}</button>
+            <button key={t ?? ''} aria-pressed={active === t} onClick={() => setType(t)}
+              className={t ? 'tag-chip' : undefined} style={t ? ({ '--c': typeColor(t) } as React.CSSProperties) : undefined}>
+              {t ?? 'All'}
+            </button>
           ))}
         </div>
       )}

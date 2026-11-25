@@ -25,7 +25,7 @@ h1 { font-family: var(--display); }
 .thumb { width: 48px; height: 48px; border-radius: 8px; background: var(--hi); display: grid; place-items: center; font: 600 .7rem var(--display); color: var(--accent); }
 .name { font-weight: 600; min-width: 0; }
 .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px; font-size: .78rem; font-weight: 400; }
-.store { background: var(--hi); color: var(--sale); padding: 1px 8px; border-radius: 999px; font-weight: 500; }
+.store { color: var(--muted); padding: 0 7px; border: 1px solid var(--hi); border-radius: 999px; }
 .price { font-variant-numeric: tabular-nums; font-weight: 600; }
 .was { text-decoration: line-through; color: var(--muted); font-variant-numeric: tabular-nums; }
 .drop { background: var(--sale); color: var(--ink); padding: 1px 7px; border-radius: 6px; font-weight: 600; font-size: .72rem; }
@@ -95,3 +95,10 @@ button.link { background: none; color: var(--muted); padding: 4px; text-decorati
 .picker li { padding: 8px 10px; border-radius: 8px; cursor: pointer; }
 .picker li[aria-selected=true] { background: var(--hi); }
 .picker li.create { color: var(--sale); }
+
+/* Type colours: each element gets --c from typeColor() */
+.tag { color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); padding: 1px 8px; border-radius: 999px; font-weight: 500; }
+.chips .tag-chip::before, .picker .dot { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--c); margin-right: 6px; vertical-align: 1px; flex: none; }
+.chips .tag-chip[aria-pressed=true] { color: var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent); }
+.picker li { display: flex; align-items: center; }
+.picker li.create .dot { background: none; box-shadow: inset 0 0 0 1.5px var(--c); }

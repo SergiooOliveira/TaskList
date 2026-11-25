@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { typeColor } from '../lib/typeColor'
 
 type Option = { label: string; value: string }
 
@@ -51,6 +52,7 @@ export default function TypePicker({ value, onChange, types }: {
             <li key={o.label} id={`${listId}-${i}`} role="option" aria-selected={i === Math.min(active, options.length - 1)}
               className={o.label === o.value ? undefined : 'create'}
               onMouseDown={(e) => e.preventDefault()} onClick={() => pick(o)} onMouseEnter={() => setActive(i)}>
+              <span className="dot" aria-hidden="true" style={{ '--c': typeColor(o.value) } as React.CSSProperties} />
               {o.label}
             </li>
           ))}
