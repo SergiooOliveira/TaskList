@@ -11,6 +11,7 @@ export default function Wishlist({ session: _session }: { session: Session }) {
   const [showBought, setShowBought] = useState(false)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
+  const [type, setType] = useState<string | null>(null)
   const [form, setForm] = useState<{ key: number; initial: Partial<Item>; id?: string } | null>(null)
   const opened = useRef(0) // a fresh key per opened form, so ItemForm never keeps another item's values
 
@@ -46,7 +47,13 @@ export default function Wishlist({ session: _session }: { session: Session }) {
     return (form?.id ? updateItem(form.id, patch) : addItem(v)).then(done, fail)
   }
   const q = query.trim().toLowerCase()
-  const shown = items?.filter((i) => i.bought === showBought && i.title.toLowerCase().includes(q))
+  // Types are free text, so "books" and "Books" count as one; the first spelling seen is shown.
+  const byKey = new Map<string, string>()
+  for (const i of items ?? []) if (i.category && !byKey.has(i.category.toLowerCase())) byKey.set(i.category.toLowerCase(), i.category)
+  const types = [...byKey.values()].sort((a, b) => a.localeCompare(b))
+  const active = type && types.includes(type) ? type : null // a type that no longer exists falls back to All
+  const shown = items?.filter((i) => i.bought === showBought && i.title.toLowerCase().includes(q) &&
+    (!active || i.category?.toLowerCase() === active.toLowerCase()))
 
   return (
     <>
@@ -62,7 +69,14 @@ export default function Wishlist({ session: _session }: { session: Session }) {
         <input type="search" aria-label="Search" placeholder="Search…" value={query} onChange={(e) => setQuery(e.target.value)} />
         <button type="button" onClick={() => setForm({ key: ++opened.current, initial: {} })}>Add</button>
       </div>
-      {form && <ItemForm key={form.key} initial={form.initial} onSave={save} onCancel={() => setForm(null)} />}
+      {types.length > 0 && (
+        <div className="chips" role="group" aria-label="Filter by type">
+          {[null, ...types].map((t) => (
+            <button key={t ?? ''} aria-pressed={active === t} onClick={() => setType(t)}>{t ?? 'All'}</button>
+          ))}
+        </div>
+      )}
+      {form && <ItemForm key={form.key} initial={form.initial} types={types} onSave={save} onCancel={() => setForm(null)} />}
       {error && <p role="alert">{error}</p>}
       {loadFailed ? (
         <div>

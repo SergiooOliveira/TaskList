@@ -82,3 +82,8 @@ button:disabled { opacity: .5; cursor: default; }
 .login .add { padding: 16px; }
 .login .add p { margin: 0; }
 button.link { background: none; color: var(--muted); padding: 4px; text-decoration: underline; }
+
+/* Type filter chips: one scrollable row so many types don't push the list down */
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.chips button { flex: none; padding: 5px 12px; color: var(--muted); background: color-mix(in srgb, var(--surface) 85%, transparent); }
+.chips [aria-pressed=true] { background: var(--hi); color: var(--sale); font-weight: 600; }

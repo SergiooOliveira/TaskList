@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import Wishlist from './Wishlist'
 import * as items from '../lib/items'
 import type { Item } from '../lib/items'
@@ -93,4 +93,35 @@ it('a lower price typed by hand keeps the old one as the drop; a higher one clea
   fireEvent.change(screen.getByLabelText(/price/i), { target: { value: '12,00' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() => expect(items.updateItem).toHaveBeenLastCalledWith('a', expect.objectContaining({ price_cents: 1200, previous_price_cents: null })))
+})
+
+describe('type filter', () => {
+  const book = mk('k', 'Dune', { category: 'Books' }), vinyl = mk('v', 'Kind of Blue', { category: 'Vinyls' }), alsoBook = mk('m', 'Emma', { category: 'books' })
+  it('shows one chip per type (case-insensitive) and filters by it', async () => {
+    show([book, vinyl, alsoBook, A])
+    await screen.findByText('Dune')
+    const chips = within(screen.getByRole('group', { name: 'Filter by type' })).getAllByRole('button').map((b) => b.textContent)
+    expect(chips).toEqual(['All', 'Books', 'Vinyls'])
+    fireEvent.click(screen.getByRole('button', { name: 'Books' }))
+    expect(screen.getByText('Dune')).toBeInTheDocument()
+    expect(screen.getByText('Emma')).toBeInTheDocument()
+    expect(screen.queryByText('Kind of Blue')).toBeNull()
+    expect(screen.queryByText('Alpha')).toBeNull()
+  })
+  it('hides the chips when no item has a type', async () => {
+    show([A])
+    await screen.findByText('Alpha')
+    expect(screen.queryByRole('group', { name: 'Filter by type' })).toBeNull()
+  })
+  it('falls back to All when the selected type disappears', async () => {
+    show([book, A])
+    await screen.findByText('Dune')
+    fireEvent.click(screen.getByRole('button', { name: 'Books' }))
+    vi.mocked(items.updateItem).mockResolvedValueOnce({ ...book, category: null })
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0])
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByText('Alpha')).toBeInTheDocument()
+    expect(screen.getByText('Dune')).toBeInTheDocument()
+  })
 })

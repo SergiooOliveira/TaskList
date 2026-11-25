@@ -20,7 +20,7 @@ it('converts the price to cents', () => {
   const { onSave, type, save } = setup()
   type('Price (€)', '1.299,99')
   save()
-  expect(onSave).toHaveBeenCalledWith({ url: 'https://www.x.test/a', title: 'Cam', image_url: null, store: 'x.test', price_cents: 129999 })
+  expect(onSave).toHaveBeenCalledWith({ url: 'https://www.x.test/a', title: 'Cam', image_url: null, store: 'x.test', price_cents: 129999, category: null })
 })
 it('saves an empty price as null', () => {
   const { onSave, save } = setup()
@@ -56,4 +56,12 @@ it('disables Save while saving so a double click saves once', async () => {
   expect(btn).toBeDisabled()
   done()
   await waitFor(() => expect(btn).toBeEnabled())
+})
+it('saves the type trimmed, and suggests existing types', () => {
+  const onSave = vi.fn()
+  render(<ItemForm initial={{ url: 'https://x.test/a', title: 'Cam' }} types={['Books', 'Vinyls']} onSave={onSave} onCancel={vi.fn()} />)
+  expect(document.querySelectorAll('#types option')).toHaveLength(2)
+  fireEvent.change(screen.getByLabelText('Type'), { target: { value: '  Vinyls ' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ category: 'Vinyls' }))
 })

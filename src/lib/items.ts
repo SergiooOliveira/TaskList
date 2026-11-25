@@ -10,6 +10,7 @@ export type Item = {
   price_cents: number | null
   previous_price_cents: number | null
   price_checked_at: string | null
+  category: string | null
   bought: boolean
   created_at: string
 }
@@ -20,7 +21,7 @@ export async function listItems(): Promise<Item[]> {
   return data as Item[]
 }
 
-export async function addItem(p: Pick<Item, 'url' | 'title' | 'image_url' | 'store' | 'price_cents'>): Promise<Item> {
+export async function addItem(p: Pick<Item, 'url' | 'title' | 'image_url' | 'store' | 'price_cents' | 'category'>): Promise<Item> {
   const { data, error } = await supabase.from('items').insert(p).select().single()
   if (error) throw error
   return data as Item

@@ -16,7 +16,7 @@ npm test
 ## One-time setup
 
 **Supabase**
-1. Create a project and run `supabase/migrations/0001_items.sql` in the SQL editor.
+1. Create a project and run each file in `supabase/migrations/` in order in the SQL editor.
 2. Under Authentication > URL Configuration, set the Site URL to your GitHub Pages URL and add `http://localhost:5173/TaskList/` and the Pages URL to the redirect URLs.
 3. Sign-in is by emailed code. Set up custom SMTP (Authentication > Emails > SMTP Settings), then make the Magic Link template body show only the code: `<p>Your sign-in code: <strong>{{ .Token }}</strong></p>`.
 4. Optional, for a personal app: Authentication > Sign In / Providers > turn off "Allow new users to sign up" once your own account exists.

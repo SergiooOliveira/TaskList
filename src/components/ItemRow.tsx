@@ -25,6 +25,7 @@ export default function ItemRow({ item, onToggleBought, onEdit, onDelete }: Prop
         <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
         <div className="meta">
           {item.store && <span className="store">{item.store}</span>}
+          {item.category && <span className="muted">{item.category}</span>}
           {cur !== null && <span className="price">{formatEuro(cur)}</span>}
           {dropped && (
             <>
