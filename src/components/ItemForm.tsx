@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { parsePrice } from '../lib/price'
 import { normalizeUrl, storeFromUrl } from '../lib/url'
 import type { Item } from '../lib/items'
+import TypePicker from './TypePicker'
 
 export type FormValues = Pick<Item, 'url' | 'title' | 'image_url' | 'store' | 'price_cents' | 'category'>
 const LINK_ERR = 'Use a http or https link'
@@ -62,15 +63,7 @@ export default function ItemForm({ initial, types = [], onSave, onCancel }: {
         {field('url', 'Link', url, setUrl)}
         {field('title', 'Name', title, setTitle)}
         {field('price', 'Price (€)', price, setPrice)}
-        {field('category', 'Type', category, setCategory)}
-        {types.length > 0 && (
-          // Existing types stay visible so a near-duplicate ("Vinyl" vs "Vinyls") is easy to avoid.
-          <div className="chips" role="group" aria-label="Existing types">
-            {types.map((t) => (
-              <button key={t} type="button" aria-pressed={t.toLowerCase() === category.trim().toLowerCase()} onClick={() => setCategory(t)}>{t}</button>
-            ))}
-          </div>
-        )}
+        <TypePicker value={category} onChange={setCategory} types={types} />
         {field('image', 'Picture URL', image, setImage)}
         <button type="submit" disabled={saving}>Save</button>
       </form>

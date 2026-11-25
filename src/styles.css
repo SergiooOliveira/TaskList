@@ -87,4 +87,11 @@ button.link { background: none; color: var(--muted); padding: 4px; text-decorati
 .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
 .chips button { flex: none; padding: 5px 12px; color: var(--muted); background: color-mix(in srgb, var(--surface) 85%, transparent); }
 .chips [aria-pressed=true] { background: var(--hi); color: var(--sale); font-weight: 600; }
-.modal .chips button:not([aria-pressed=true]) { background: color-mix(in srgb, var(--bg) 70%, transparent); }
+
+/* Type picker list sits in the flow (an overlay would be clipped by the modal) and scrolls when long */
+.picker { position: relative; }
+.picker ul { margin: 4px 0 0; padding: 4px; list-style: none;
+  max-height: 200px; overflow-y: auto; background: var(--bg); border: 1px solid var(--hi); border-radius: 10px; }
+.picker li { padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.picker li[aria-selected=true] { background: var(--hi); }
+.picker li.create { color: var(--sale); }
