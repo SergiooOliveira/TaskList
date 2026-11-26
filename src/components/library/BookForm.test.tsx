@@ -40,12 +40,23 @@ test('picking a candidate fills the fields', async () => {
   setup()
   type('Title', 'Lend')
   fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
-  fireEvent.click(await screen.findByRole('button', { name: /Lendários/ }))
+  const match = await screen.findByRole('button', { name: /Lendários/ })
+  expect(match.querySelector('img')).toHaveAttribute('src', 'https://img.test/c.jpg') // thumbnail shows which edition has a cover
+  fireEvent.click(match)
   expect(screen.getByLabelText('Title')).toHaveValue('Lendários')
   expect(screen.getByLabelText('Author')).toHaveValue('Tracy Deonn')
   expect(screen.getByLabelText('Pages')).toHaveValue('480')
   expect(screen.getByLabelText('Language')).toHaveValue('Portuguese')
   expect(screen.getByLabelText('Cover URL')).toHaveValue('https://img.test/c.jpg')
+  expect(screen.getByAltText('Cover preview')).toHaveAttribute('src', 'https://img.test/c.jpg')
+})
+
+test('a match without a cover says so', async () => {
+  vi.spyOn(gb, 'searchBooks').mockResolvedValue([{ ...cand, cover: null }])
+  setup()
+  type('Title', 'Lend')
+  fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
+  expect(await screen.findByText('No cover')).toBeInTheDocument()
 })
 
 test('I want it saves an unbought book; price and genres are parsed', async () => {

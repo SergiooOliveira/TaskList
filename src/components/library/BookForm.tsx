@@ -110,7 +110,8 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
           <ul className="candidates" aria-label="Matches">
             {found.map((c, i) => (
               <li key={i}><button type="button" onClick={() => pick(c)}>
-                {c.title}{c.authors.length > 0 && ` · ${c.authors.join(', ')}`}{c.year && ` · ${c.year}`}
+                {c.cover ? <img src={c.cover} alt="" /> : <span className="nocover">No cover</span>}
+                <span>{c.title}{c.authors.length > 0 && ` · ${c.authors.join(', ')}`}{c.year && ` · ${c.year}`}</span>
               </button></li>
             ))}
           </ul>
@@ -125,6 +126,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
         {field('price', 'Price (€)')}
         {field('store', 'Store')}
         {field('cover', 'Cover URL')}
+        {v.cover.trim() && <img className="cover-preview" src={v.cover.trim()} alt="Cover preview" />}
         <div role="group" aria-label="Rating" className="rating">
           {[1, 2, 3, 4, 5].map((n) => (
             <button key={n} type="button" aria-pressed={rating === n} aria-label={`${n} star${n === 1 ? '' : 's'}`}
