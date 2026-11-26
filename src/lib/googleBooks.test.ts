@@ -31,3 +31,12 @@ test('searchBooks builds the query and survives errors', async () => {
   f.mockResolvedValue({ ok: false, status: 429 } as Response)
   expect(await searchBooks('x')).toEqual({ ok: false })
 })
+
+test('searchBooks sends the API key when one is configured', async () => {
+  vi.stubEnv('VITE_GOOGLE_BOOKS_KEY', 'k-123')
+  const f = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({}) } as Response)
+  await searchBooks('Dune')
+  expect(String(f.mock.calls[0][0])).toContain('&key=k-123')
+  vi.unstubAllEnvs()
+  f.mockRestore()
+})

@@ -23,7 +23,9 @@ export function toCandidate(volume: unknown): Candidate {
 export async function searchBooks(q: string): Promise<Candidate[] | { ok: false }> {
   try {
     const query = isIsbn(q) ? `isbn:${q.replace(/[\s-]/g, '')}` : `intitle:${q.trim()}`
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`)
+    // Keyless calls share Google's global daily quota, which is usually exhausted; a referrer-restricted key is safe in the client.
+    const key = import.meta.env.VITE_GOOGLE_BOOKS_KEY
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5${key ? `&key=${encodeURIComponent(key)}` : ''}`)
     if (!res.ok) return { ok: false }
     const body = await res.json() as { items?: unknown[] }
     return (body.items ?? []).map(toCandidate)
