@@ -53,7 +53,7 @@ export default function BookRow({ item, reads, onChange, onError }: Props) {
   )
 }
 
-export function WantedBookRow({ item, onBought }: { item: Item; onBought: (i: Item) => void }) {
+export function WantedBookRow({ item, onBought, busy = false }: { item: Item; onBought: (i: Item) => void; busy?: boolean }) {
   return (
     <div className="book wanted">
       <Cover item={item} />
@@ -65,19 +65,18 @@ export function WantedBookRow({ item, onBought }: { item: Item; onBought: (i: It
           {item.store && <span className="store">{item.store}</span>}
         </div>
       </div>
-      <label className="bought"><input type="checkbox" checked={item.bought} onChange={() => onBought(item)} />Bought</label>
+      <label className="bought"><input type="checkbox" checked={item.bought} disabled={busy} onChange={() => onBought(item)} />Bought</label>
     </div>
   )
 }
 
-// shortcut: no onClick yet, SeriesPanel arrives in Task 5.
-export function SeriesRow({ group, reads }: { group: SeriesGroup; reads: Read[] }) {
+export function SeriesRow({ group, reads, onOpen }: { group: SeriesGroup; reads: Read[]; onOpen: () => void }) {
   const stateOf = (b: Item) => readState(reads.filter((r) => r.item_id === b.id))
   const { books, owned, wanted, read } = group
   const line = wanted > 0 ? `${owned} on shelf · ${wanted} wanted`
     : `${books.length} books · ${read === books.length ? 'all read' : `${read} read`}`
   return (
-    <button className="book series">
+    <button className="book series" onClick={onOpen}>
       <span className="stack">
         {books.slice(1, 3).map((b, i) => <span key={b.id} className={`layer l${i + 1}`} />).reverse()}
         <Cover item={books[0]} />

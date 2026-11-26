@@ -22,8 +22,7 @@ export function MangaShelfRow({ s }: { s: MangaSeries }) {
   )
 }
 
-// shortcut: Choose volumes does nothing yet, VolumePanel arrives in Task 5.
-export function MangaWishCard({ s }: { s: MangaSeries }) {
+export function MangaWishCard({ s, onChoose }: { s: MangaSeries; onChoose: () => void }) {
   const n = s.wanted.length
   return (
     <div className="manga hot">
@@ -35,7 +34,7 @@ export function MangaWishCard({ s }: { s: MangaSeries }) {
           <span>{n} volume{n === 1 ? '' : 's'}{s.range && <span className="muted"> · {s.range}</span>}</span>
           <span className="price">{formatEuro(sumCents(s.wanted))}</span>
         </div>
-        <button className="choose">Choose volumes you bought <span aria-hidden="true">›</span></button>
+        <button className="choose" onClick={onChoose}>Choose volumes you bought <span aria-hidden="true">›</span></button>
       </div>
     </div>
   )

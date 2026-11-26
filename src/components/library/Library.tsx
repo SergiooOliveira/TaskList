@@ -3,6 +3,8 @@ import { boughtPatch, formatEuro, listItems, updateItem, type Item } from '../..
 import { listReads, readState, todayISO, type Read } from '../../lib/reads'
 import { forms, groupBooks, groupManga } from '../../lib/library'
 import { href, type Kind } from '../../lib/route'
+import SeriesPanel from './SeriesPanel'
+import VolumePanel from './VolumePanel'
 import BookRow, { SeriesRow, WantedBookRow } from './BookRow'
 import { MangaShelfRow, MangaWishCard, sumCents } from './MangaRow'
 import { HiganbanaArt, NightshadeArt } from './themes'
@@ -15,6 +17,7 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
   const [failed, setFailed] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState<string | null>(null)
+  const [panel, setPanel] = useState<{ kind: 'series' | 'volumes'; name: string } | null>(null)
 
   const load = useCallback(() => {
     setFailed(false)
@@ -27,8 +30,8 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
     setTimeout(() => setError(''), 4000)
   }
   const saveRead = (r: Read) => setData((d) => d && { ...d, reads: [...d.reads.filter((x) => x.id !== r.id), r] })
-  const buy = (it: Item) => updateItem(it.id, boughtPatch(true, todayISO())).then(
-    (u) => setData((d) => d && { ...d, items: d.items.map((x) => (x.id === u.id ? u : x)) }), fail)
+  const saveItems = (us: Item[]) => setData((d) => d && { ...d, items: d.items.map((x) => us.find((u) => u.id === x.id) ?? x) })
+  const buy = (it: Item) => updateItem(it.id, boughtPatch(true, todayISO())).then((u) => saveItems([u]), fail)
 
   const mine = data?.items.filter((i) => i.collection === kind) ?? []
   const ids = new Set(mine.map((i) => i.id))
@@ -91,34 +94,44 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
         </div>
       ) : data && (
         <div className="lib-list">
-          {kind === 'book' && view === 'shelf' && <BookShelf items={shown} reads={reads} onChange={saveRead} onError={fail} />}
+          {kind === 'book' && view === 'shelf' && <BookShelf items={shown} reads={reads} onChange={saveRead} onError={fail} onOpen={(name) => setPanel({ kind: 'series', name })} />}
           {kind === 'book' && view === 'wishlist' && <>
             {shown.filter((i) => !i.bought).map((i) => <WantedBookRow key={i.id} item={i} onBought={buy} />)}
             <p className="foot">{wanted.length ? 'Tick Bought and the book moves to your shelf.' : 'Nothing wanted yet.'}</p>
           </>}
-          {kind === 'manga' && <MangaList series={groupManga(shown, reads)} view={view} />}
+          {kind === 'manga' && <MangaList series={groupManga(shown, reads)} view={view} onChoose={(name) => setPanel({ kind: 'volumes', name })} />}
         </div>
       )}
+      {data && panel?.kind === 'series' && (() => {
+        const group = groupBooks(mine, reads).series.find((s) => s.name === panel.name)
+        // shortcut: + Add a book does nothing yet, BookForm arrives in Task 6
+        return group && <SeriesPanel group={group} reads={reads} onClose={() => setPanel(null)} onChange={saveRead}
+          onBought={(u) => saveItems([u])} onError={fail} onAddToSeries={() => {}} />
+      })()}
+      {data && panel?.kind === 'volumes' && (() => {
+        const series = groupManga(mine, reads).find((s) => s.name === panel.name)
+        return series && <VolumePanel series={series} onClose={() => setPanel(null)} onMoved={saveItems} onError={fail} />
+      })()}
     </div>
   )
 }
 
-function BookShelf({ items, reads, onChange, onError }: { items: Item[]; reads: Read[]; onChange: (r: Read) => void; onError: (e: unknown) => void }) {
+function BookShelf({ items, reads, onChange, onError, onOpen }: { items: Item[]; reads: Read[]; onChange: (r: Read) => void; onError: (e: unknown) => void; onOpen: (name: string) => void }) {
   const g = groupBooks(items, reads)
   const row = (i: Item) => <BookRow key={i.id} item={i} reads={reads.filter((r) => r.item_id === i.id)} onChange={onChange} onError={onError} />
   if (!g.reading.length && !g.series.length && !g.singles.length) return <p className="foot">Nothing on your shelf yet.</p>
   return <>
     {g.reading.length > 0 && <><h2>READING NOW</h2>{g.reading.map(row)}</>}
-    {g.series.length > 0 && <><h2>SERIES</h2>{g.series.map((s) => <SeriesRow key={s.name} group={s} reads={reads} />)}</>}
+    {g.series.length > 0 && <><h2>SERIES</h2>{g.series.map((s) => <SeriesRow key={s.name} group={s} reads={reads} onOpen={() => onOpen(s.name)} />)}</>}
     {g.singles.length > 0 && <><h2>SINGLE BOOKS</h2>{g.singles.map(row)}</>}
   </>
 }
 
-function MangaList({ series, view }: { series: ReturnType<typeof groupManga>; view: View }) {
+function MangaList({ series, view, onChoose }: { series: ReturnType<typeof groupManga>; view: View; onChoose: (name: string) => void }) {
   const shelf = view === 'shelf'
   const list = series.filter((s) => (shelf ? s.owned : s.wanted).length > 0)
   return <>
-    {list.map((s) => (shelf ? <MangaShelfRow key={s.name} s={s} /> : <MangaWishCard key={s.name} s={s} />))}
+    {list.map((s) => (shelf ? <MangaShelfRow key={s.name} s={s} /> : <MangaWishCard key={s.name} s={s} onChoose={() => onChoose(s.name)} />))}
     <p className="foot">{list.length === 0 ? (shelf ? 'Nothing on your shelf yet.' : 'Nothing wanted yet.') : shelf ? '' : 'Bought volumes move to your shelf.'}</p>
   </>
 }
