@@ -4,7 +4,8 @@ import { typeColor } from '../lib/typeColor'
 type Option = { label: string; value: string }
 
 // A text field that opens a searchable list of existing types; an unknown name offers "Create".
-export default function TypePicker({ value, onChange, types }: {
+export default function TypePicker({ value, onChange, types, label = 'Type' }: {
+  label?: string
   value: string
   onChange: (v: string) => void
   types: string[]
@@ -38,7 +39,7 @@ export default function TypePicker({ value, onChange, types }: {
   return (
     <div className="picker">
       <label>
-        Type
+        {label}
         <input value={value} role="combobox" aria-expanded={shown} aria-controls={listId} aria-autocomplete="list"
           aria-activedescendant={shown ? `${listId}-${Math.min(active, options.length - 1)}` : undefined}
           placeholder="Search or create…" autoComplete="off"

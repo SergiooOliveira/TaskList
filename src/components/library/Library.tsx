@@ -3,6 +3,7 @@ import { boughtPatch, formatEuro, listItems, updateItem, type Item } from '../..
 import { listReads, readState, todayISO, type Read } from '../../lib/reads'
 import { forms, groupBooks, groupManga } from '../../lib/library'
 import { href, type Kind } from '../../lib/route'
+import BookForm from './BookForm'
 import SeriesPanel from './SeriesPanel'
 import VolumePanel from './VolumePanel'
 import BookRow, { SeriesRow, WantedBookRow } from './BookRow'
@@ -17,6 +18,7 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
   const [failed, setFailed] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Partial<Item> | null>(null) // BookForm initial values
   const [panel, setPanel] = useState<{ kind: 'series' | 'volumes'; name: string } | null>(null)
 
   const load = useCallback(() => {
@@ -60,8 +62,7 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
           <a className="icon" href={href({ name: 'stats' })} aria-label="Reading and spending">
             <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 17V9M8 17V4M13 17v-6M18 17V7" stroke="currentColor" strokeWidth="1.6" fill="none" /></svg>
           </a>
-          {/* shortcut: + does nothing yet, BookForm arrives in Task 6 */}
-          <button className="icon" aria-label={kind === 'book' ? 'Add a book' : 'Add a manga'}>+</button>
+          <button className="icon" aria-label={kind === 'book' ? 'Add a book' : 'Add a manga'} onClick={() => setEditing({})}>+</button>
         </div>
       </header>
       <p className="lede">{lede}</p>
@@ -94,9 +95,9 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
         </div>
       ) : data && (
         <div className="lib-list">
-          {kind === 'book' && view === 'shelf' && <BookShelf items={shown} reads={reads} onChange={saveRead} onError={fail} onOpen={(name) => setPanel({ kind: 'series', name })} />}
+          {kind === 'book' && view === 'shelf' && <BookShelf items={shown} reads={reads} onEdit={setEditing} onChange={saveRead} onError={fail} onOpen={(name) => setPanel({ kind: 'series', name })} />}
           {kind === 'book' && view === 'wishlist' && <>
-            {shown.filter((i) => !i.bought).map((i) => <WantedBookRow key={i.id} item={i} onBought={buy} />)}
+            {shown.filter((i) => !i.bought).map((i) => <WantedBookRow key={i.id} item={i} onBought={buy} onEdit={setEditing} />)}
             <p className="foot">{wanted.length ? 'Tick Bought and the book moves to your shelf.' : 'Nothing wanted yet.'}</p>
           </>}
           {kind === 'manga' && <MangaList series={groupManga(shown, reads)} view={view} onChoose={(name) => setPanel({ kind: 'volumes', name })} />}
@@ -104,21 +105,25 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
       )}
       {data && panel?.kind === 'series' && (() => {
         const group = groupBooks(mine, reads).series.find((s) => s.name === panel.name)
-        // shortcut: + Add a book does nothing yet, BookForm arrives in Task 6
         return group && <SeriesPanel group={group} reads={reads} onClose={() => setPanel(null)} onChange={saveRead}
-          onBought={(u) => saveItems([u])} onError={fail} onAddToSeries={() => {}} />
+          onBought={(u) => saveItems([u])} onError={fail} onAddToSeries={(name, author) => setEditing({
+            series: name, author, bought: false,
+            series_number: Math.max(0, ...mine.filter((i) => i.series === name).map((i) => i.series_number ?? 0)) + 1,
+          })} />
       })()}
       {data && panel?.kind === 'volumes' && (() => {
         const series = groupManga(mine, reads).find((s) => s.name === panel.name)
         return series && <VolumePanel series={series} onClose={() => setPanel(null)} onMoved={saveItems} onError={fail} />
       })()}
+      {editing && <BookForm initial={editing} collection={kind} forms={allForms} reads={editing.id ? readsOf(editing as Item) : []}
+        onCancel={() => setEditing(null)} onSaved={() => { setEditing(null); load() }} />}
     </div>
   )
 }
 
-function BookShelf({ items, reads, onChange, onError, onOpen }: { items: Item[]; reads: Read[]; onChange: (r: Read) => void; onError: (e: unknown) => void; onOpen: (name: string) => void }) {
+function BookShelf({ items, reads, onEdit, onChange, onError, onOpen }: { items: Item[]; reads: Read[]; onEdit: (i: Item) => void; onChange: (r: Read) => void; onError: (e: unknown) => void; onOpen: (name: string) => void }) {
   const g = groupBooks(items, reads)
-  const row = (i: Item) => <BookRow key={i.id} item={i} reads={reads.filter((r) => r.item_id === i.id)} onChange={onChange} onError={onError} />
+  const row = (i: Item) => <BookRow key={i.id} item={i} reads={reads.filter((r) => r.item_id === i.id)} onEdit={onEdit} onChange={onChange} onError={onError} />
   if (!g.reading.length && !g.series.length && !g.singles.length) return <p className="foot">Nothing on your shelf yet.</p>
   return <>
     {g.reading.length > 0 && <><h2>READING NOW</h2>{g.reading.map(row)}</>}

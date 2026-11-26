@@ -6,7 +6,7 @@ import type { Item } from '../../lib/items'
 import type { Read } from '../../lib/reads'
 
 vi.mock('../../lib/supabase', () => ({ supabase: {} }))
-vi.mock('../../lib/items', async (orig) => ({ ...(await orig<typeof items>()), listItems: vi.fn(), updateItem: vi.fn() }))
+vi.mock('../../lib/items', async (orig) => ({ ...(await orig<typeof items>()), listItems: vi.fn(), updateItem: vi.fn(), addItem: vi.fn() }))
 vi.mock('../../lib/reads', async (orig) => ({ ...(await orig<typeof reads>()), listReads: vi.fn(), startRead: vi.fn(), finishRead: vi.fn() }))
 
 const book = (id: string, title: string, o: Partial<Item> = {}): Item => ({
@@ -127,4 +127,32 @@ it('manga wishlist shows one card per series with its volumes', async () => {
   render(<Library kind="manga" view="wishlist" />)
   expect(await screen.findByText('Demon Slayer')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Choose volumes you bought/ })).toBeInTheDocument()
+})
+
+it('+ opens the book form and saving reloads the list', async () => {
+  vi.mocked(items.addItem).mockResolvedValue(book('new', 'Novo'))
+  render(<Library kind="book" view="shelf" />)
+  await screen.findByText('Forjados pelo Destino')
+  fireEvent.click(screen.getByRole('button', { name: 'Add a book' }))
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Novo' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(items.addItem).toHaveBeenCalledWith(expect.objectContaining({ title: 'Novo', collection: 'book' })))
+  await waitFor(() => expect(reads.listReads).toHaveBeenCalledTimes(2))
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Add book' })).toBeNull())
+})
+
+it('series + Add a book prefills series, author and next number as wanted', async () => {
+  render(<Library kind="book" view="shelf" />)
+  fireEvent.click(await screen.findByRole('button', { name: /The Legendborn Cycle/ }))
+  fireEvent.click(screen.getByRole('button', { name: '+ Add a book' }))
+  expect(screen.getByLabelText('Series')).toHaveValue('The Legendborn Cycle')
+  expect(screen.getByLabelText('Author')).toHaveValue('Tracy Deonn')
+  expect(screen.getByLabelText('Number')).toHaveValue('4')
+  expect(screen.getByRole('radio', { name: 'I want it' })).toBeChecked()
+})
+
+it('the edit button on a book opens the form filled in', async () => {
+  render(<Library kind="book" view="shelf" />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit A templária' }))
+  expect(screen.getByLabelText('Title')).toHaveValue('A templária')
 })

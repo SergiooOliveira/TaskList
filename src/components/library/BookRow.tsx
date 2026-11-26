@@ -10,17 +10,20 @@ export function Cover({ item, className = 'cover' }: { item?: Item; className?: 
 }
 
 // Title links to the product page only when there is one (no <a> without href).
-export const Title = ({ item }: { item: Item }) => (
-  <div className="title">{item.url ? <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a> : item.title}</div>
+export const Title = ({ item, onEdit }: { item: Item; onEdit?: (i: Item) => void }) => (
+  <div className="title">
+    {item.url ? <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a> : item.title}
+    {onEdit && <button type="button" className="edit" aria-label={`Edit ${item.title}`} onClick={() => onEdit(item)}>✎</button>}
+  </div>
 )
 
 export const seriesLabel = (i: Item) => i.series ? `${i.series}${i.series_number !== null ? ` #${i.series_number}` : ''}` : null
 const day = (iso: string) => new Date(`${iso}T00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 
-type Props = { item: Item; reads: Read[]; onChange: (r: Read) => void; onError: (e: unknown) => void }
+type Props = { item: Item; reads: Read[]; onEdit?: (i: Item) => void; onChange: (r: Read) => void; onError: (e: unknown) => void }
 
 // One owned book with its state line and one action: Finished / Start / stars or Read again.
-export default function BookRow({ item, reads, onChange, onError }: Props) {
+export default function BookRow({ item, reads, onEdit, onChange, onError }: Props) {
   const [busy, setBusy] = useState(false) // a double tap must not start two reads
   const state = readState(reads)
   const open = openRead(reads)
@@ -37,7 +40,7 @@ export default function BookRow({ item, reads, onChange, onError }: Props) {
     <div className="book">
       <Cover item={item} />
       <div className="body">
-        <Title item={item} />
+        <Title item={item} onEdit={onEdit} />
         <div className="sub">{(open ? [seriesLabel(item) ?? item.author, status] : [item.author, seriesLabel(item), status]).filter(Boolean).join(' · ')}</div>
       </div>
       {open ? (
@@ -53,12 +56,12 @@ export default function BookRow({ item, reads, onChange, onError }: Props) {
   )
 }
 
-export function WantedBookRow({ item, onBought, busy = false }: { item: Item; onBought: (i: Item) => void; busy?: boolean }) {
+export function WantedBookRow({ item, onBought, onEdit, busy = false }: { item: Item; onBought: (i: Item) => void; onEdit?: (i: Item) => void; busy?: boolean }) {
   return (
     <div className="book wanted">
       <Cover item={item} />
       <div className="body">
-        <Title item={item} />
+        <Title item={item} onEdit={onEdit} />
         <div className="sub">{[item.author, seriesLabel(item)].filter(Boolean).join(' · ')}</div>
         <div className="meta">
           {item.price_cents !== null && <span className="price">{formatEuro(item.price_cents)}</span>}
