@@ -1,12 +1,12 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { Item } from '../../lib/items'
 import { openRead, type Read } from '../../lib/reads'
 import { href, type Route } from '../../lib/route'
 import { Cover, ReadAction, readStatus } from './BookRow'
 import { roman } from './SeriesPanel'
 
-// shortcut: "long" is guessed from length (jsdom can't measure a clamp); measure scrollHeight if short texts get a needless toggle.
-const LONG = 220
+// Fallback when there is no layout to measure (jsdom): a long text or many lines counts as clamped.
+const looksLong = (s: string) => s.length > 150 || s.split('\n').length > 4
 const num = new Intl.NumberFormat('pt-PT')
 
 type Props = { item: Item; reads: Read[]; back: Route; onSeries: () => void; onChange: (r: Read) => void; onError: (e: unknown) => void }
@@ -14,6 +14,21 @@ type Props = { item: Item; reads: Read[]; back: Route; onSeries: () => void; onC
 // Read-only details per library-mockups/BookDetail.html. Price and store live in the edit form only.
 export default function BookDetail({ item, reads, back, onSeries, onChange, onError }: Props) {
   const [more, setMore] = useState(false)
+  const para = useRef<HTMLParagraphElement>(null)
+  const [long, setLong] = useState(() => !!item.summary && looksLong(item.summary))
+  // Read more shows only when the clamp really hides text; re-measured on resize and once web fonts load.
+  useLayoutEffect(() => {
+    const check = () => {
+      const el = para.current
+      if (!el || !item.summary) return
+      if (!el.clientHeight) setLong(looksLong(item.summary))
+      else if (!el.closest('.open')) setLong(el.scrollHeight > el.clientHeight + 1) // expanded: keep the last answer
+    }
+    check()
+    document.fonts?.ready.then(check)
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [item.summary])
   const n = item.series_number
   const status = readStatus(reads)
   const line = !item.bought ? 'On your wishlist' : openRead(reads) ? `Reading ${status}` : status[0].toUpperCase() + status.slice(1)
@@ -45,8 +60,8 @@ export default function BookDetail({ item, reads, back, onSeries, onChange, onEr
         <Cover item={item} />
         {item.summary && (
           <div className="summary">
-            <p>{item.summary}</p>
-            {item.summary.length > LONG && <button type="button" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Read less' : 'Read more'}</button>}
+            <p ref={para}>{item.summary}</p>
+            {long && <button type="button" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Read less' : 'Read more'}</button>}
           </div>
         )}
       </div>
@@ -62,6 +77,7 @@ export default function BookDetail({ item, reads, back, onSeries, onChange, onEr
       <dl>
         {rows.filter(([, v]) => v).map(([k, v]) => <div key={k}><dt>{k.toUpperCase()}</dt><dd>{v}</dd></div>)}
       </dl>
+      {item.url && <a className="shop" href={item.url} target="_blank" rel="noopener noreferrer">Shop page <span aria-hidden="true">↗</span></a>}
     </article>
   )
 }

@@ -7,7 +7,7 @@ import type { Item } from '../../lib/items'
 import type { Read } from '../../lib/reads'
 
 vi.mock('../../lib/supabase', () => ({ supabase: {} }))
-vi.mock('../../lib/items', async (orig) => ({ ...(await orig<typeof items>()), listItems: vi.fn(), updateItem: vi.fn() }))
+vi.mock('../../lib/items', async (orig) => ({ ...(await orig<typeof items>()), listItems: vi.fn(), updateItem: vi.fn(), deleteItem: vi.fn() }))
 vi.mock('../../lib/reads', async (orig) => ({ ...(await orig<typeof reads>()), listReads: vi.fn(), startRead: vi.fn(), finishRead: vi.fn() }))
 
 const book = (id: string, title: string, o: Partial<Item> = {}): Item => ({
@@ -52,6 +52,39 @@ describe('details', () => {
     expect(screen.getByText('Reading since 9 Jun')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Finished' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Not rated yet' })).toBeInTheDocument()
+  })
+
+  it('shows the shop page link only when there is one', async () => {
+    vi.mocked(items.listItems).mockResolvedValue([{ ...fixture[0], url: 'https://bertrand.pt/x' }, fixture[6]])
+    render(<ItemPage id="lend" edit={false} />)
+    const a = await screen.findByRole('link', { name: /Shop page/ })
+    expect(a).toHaveAttribute('href', 'https://bertrand.pt/x')
+    expect(a).toHaveAttribute('target', '_blank')
+    expect(a).toHaveAttribute('rel', 'noopener noreferrer')
+    cleanup()
+    render(<ItemPage id="bare" edit={false} />)
+    await screen.findByRole('heading', { name: 'Bare' })
+    expect(screen.queryByRole('link', { name: /Shop page/ })).toBeNull()
+  })
+
+  it('without layout, a short summary with many line breaks still gets Read more; a short one does not', async () => {
+    vi.mocked(items.listItems).mockResolvedValue([{ ...fixture[0], id: 'a', summary: 'a\nb\nc\nd\ne' }, { ...fixture[0], id: 'b', summary: 'Short.' }])
+    render(<ItemPage id="a" edit={false} />)
+    expect(await screen.findByRole('button', { name: 'Read more' })).toBeInTheDocument()
+    cleanup()
+    render(<ItemPage id="b" edit={false} />)
+    await screen.findByText('Short.')
+    expect(screen.queryByRole('button', { name: 'Read more' })).toBeNull()
+  })
+
+  it('after a delete it goes back past the edit and details screens', async () => {
+    vi.mocked(items.deleteItem).mockResolvedValue()
+    const go = vi.spyOn(history, 'go').mockImplementation(() => {})
+    Object.defineProperty(history, 'length', { value: 3, configurable: true })
+    render(<ItemPage id="lend" edit />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete this book' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    await waitFor(() => expect(go).toHaveBeenCalledWith(-2))
   })
 
   it('omits missing rows and the series line', async () => {

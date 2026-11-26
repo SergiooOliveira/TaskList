@@ -20,6 +20,7 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
   const [editing, setEditing] = useState<Partial<Item> | null>(null) // new-book BookForm initial values
   const [panel, setPanel] = useState<{ kind: 'series' | 'manga' | 'volumes'; name: string } | null>(null)
 
+  useEffect(() => { if (editing) window.scrollTo(0, 0) }, [!!editing]) // the add form starts at its header
   useEffect(() => { try { sessionStorage.setItem('libKind', kind) } catch { /* private mode */ } }, [kind])
 
   const buy = (it: Item) => updateItem(it.id, boughtPatch(true, todayISO())).then((u) => saveItems([u]), fail)

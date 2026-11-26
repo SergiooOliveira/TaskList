@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { ownedInGenre } from '../../lib/library'
 import { readState } from '../../lib/reads'
 import { goBack, href, type Route } from '../../lib/route'
@@ -12,6 +13,7 @@ const shelf: Route = { name: 'library', kind: 'book', view: 'shelf' }
 // #/genre/<g>: owned books and manga in one genre, per library-mockups/GenreList.html.
 export default function GenreList({ genre }: { genre: string }) {
   const { data, failed, load } = useLibraryData()
+  useEffect(() => { window.scrollTo(0, 0) }, [genre])
   const list = data ? ownedInGenre(data.items, genre) : []
   const stateOf = (id: string) => readState(data?.reads.filter((r) => r.item_id === id) ?? [])
   const read = list.filter((i) => stateOf(i.id) === 'read').length

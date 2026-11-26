@@ -30,7 +30,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
     title: text(initial.title), author: text(initial.author), series: text(initial.series), number: text(initial.series_number),
     form: text(initial.form), genres: (initial.genres ?? []).join(', '), pages: text(initial.pages), language: text(initial.language),
     price: initial.price_cents != null ? (initial.price_cents / 100).toFixed(2).replace('.', ',') : '', store: text(initial.store),
-    cover: text(initial.image_url), summary: text(initial.summary), started: text(latest?.started_on), finished: text(latest?.finished_on),
+    cover: text(initial.image_url), link: text(initial.url), summary: text(initial.summary), started: text(latest?.started_on), finished: text(latest?.finished_on),
   })
   const [rating, setRating] = useState(initial.rating ?? 0)
   const [own, setOwn] = useState(initial.bought ?? true)
@@ -61,6 +61,8 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
     if (number === undefined) e2.number = 'Use a whole number'
     const cover = v.cover.trim() ? normalizeUrl(v.cover) : null
     if (v.cover.trim() && !cover) e2.cover = LINK_ERR
+    const url = v.link.trim() ? normalizeUrl(v.link) : null
+    if (v.link.trim() && !url) e2.link = LINK_ERR
     if (initial.id && own && latest) {
       if (v.finished && !v.started) e2.started = 'Add a start date first'
       else if (v.finished && v.started > v.finished) e2.finished = "Finish can't be before start"
@@ -72,7 +74,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
     const fields: NewItem = {
       title: v.title.trim(), author: n(v.author), series: n(v.series), series_number: number ?? null, form: n(v.form),
       genres: genres.length ? genres : null, pages: pages ?? null, language: n(v.language), price_cents: cents ?? null,
-      store: n(v.store), image_url: cover, summary: n(v.summary), rating: rating || null,
+      store: n(v.store), url, image_url: cover, summary: n(v.summary), rating: rating || null,
       bought: own, bought_on: own ? (initial.bought ? initial.bought_on ?? null : todayISO()) : null, // owned stays as-is (imports have no date)
     }
     run(async () => {
@@ -132,6 +134,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
           ))}
         </div>
         <div className="pair">{field('price', own ? 'Price paid (€)' : 'Price (€)')}{field('store', 'Store')}</div>
+        {field('link', 'Shop link', { inputMode: 'url' })}
         {initial.id && own && latest && <div className="pair">{field('started', 'Started on', { type: 'date' })}{field('finished', 'Finished on', { type: 'date' })}</div>}
         <div role="group" aria-label="Rating" className="rating">
           {[1, 2, 3, 4, 5].map((n) => (

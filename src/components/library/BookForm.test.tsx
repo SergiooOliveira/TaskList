@@ -193,3 +193,18 @@ test('price is labelled as paid when owned, as a price when wanted; Cancel cance
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
   expect(onCancel).toHaveBeenCalled()
 })
+
+test('the shop link is saved normalized; a bad one shows the link error', async () => {
+  const initial = { id: 'b1', title: 'Old', bought: false, url: 'https://shop.test/old', collection: 'book' as const }
+  vi.mocked(items.updateItem).mockImplementation(async (id, p) => ({ ...initial, ...p, id }) as items.Item)
+  const { onSaved } = setup({ initial })
+  expect(screen.getByLabelText('Shop link')).toHaveValue('https://shop.test/old')
+  type('Shop link', 'javascript:alert(1)')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(screen.getByText('Use a http or https link')).toBeInTheDocument()
+  expect(items.updateItem).not.toHaveBeenCalled()
+  type('Shop link', 'bertrand.pt/livro/x')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(onSaved).toHaveBeenCalled())
+  expect(items.updateItem).toHaveBeenCalledWith('b1', expect.objectContaining({ url: 'https://bertrand.pt/livro/x' }))
+})
