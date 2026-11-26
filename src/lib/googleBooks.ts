@@ -20,16 +20,22 @@ export function toCandidate(volume: unknown): Candidate {
   }
 }
 
-export async function searchBooks(q: string): Promise<Candidate[] | { ok: false }> {
+// Google's own reason (e.g. "403: Requests from referer … are blocked") is shown so a bad key setup is diagnosable.
+export type LookupError = { ok: false; reason: string }
+
+export async function searchBooks(q: string): Promise<Candidate[] | LookupError> {
   try {
     const query = isIsbn(q) ? `isbn:${q.replace(/[\s-]/g, '')}` : `intitle:${q.trim()}`
     // Keyless calls share Google's global daily quota, which is usually exhausted; a referrer-restricted key is safe in the client.
     const key = import.meta.env.VITE_GOOGLE_BOOKS_KEY
     const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5${key ? `&key=${encodeURIComponent(key)}` : ''}`)
-    if (!res.ok) return { ok: false }
+    if (!res.ok) {
+      const err = await res.json().catch(() => null) as { error?: { message?: string } } | null
+      return { ok: false, reason: `${res.status}${err?.error?.message ? `: ${err.error.message}` : ''}` }
+    }
     const body = await res.json() as { items?: unknown[] }
     return (body.items ?? []).map(toCandidate)
   } catch {
-    return { ok: false }
+    return { ok: false, reason: 'network error' }
   }
 }

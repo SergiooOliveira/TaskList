@@ -25,11 +25,11 @@ test('searchBooks builds the query and survives errors', async () => {
   expect(await searchBooks('9789722512345')).toHaveLength(1)
   expect(f.mock.calls[0][0]).toBe('https://www.googleapis.com/books/v1/volumes?q=isbn%3A9789722512345&maxResults=5')
   f.mockRejectedValue(new Error('x'))
-  expect(await searchBooks('x')).toEqual({ ok: false })
+  expect(await searchBooks('x')).toMatchObject({ ok: false })
   f.mockResolvedValue({ ok: true, json: async () => ({ totalItems: 0 }) } as Response)
   expect(await searchBooks('x')).toEqual([])
   f.mockResolvedValue({ ok: false, status: 429 } as Response)
-  expect(await searchBooks('x')).toEqual({ ok: false })
+  expect(await searchBooks('x')).toMatchObject({ ok: false })
 })
 
 test('searchBooks sends the API key when one is configured', async () => {
@@ -38,5 +38,11 @@ test('searchBooks sends the API key when one is configured', async () => {
   await searchBooks('Dune')
   expect(String(f.mock.calls[0][0])).toContain('&key=k-123')
   vi.unstubAllEnvs()
+  f.mockRestore()
+})
+
+test('searchBooks reports Google\'s reason on a refused request', async () => {
+  const f = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 403, json: async () => ({ error: { message: 'Requests from referer are blocked.' } }) } as unknown as Response)
+  expect(await searchBooks('x')).toEqual({ ok: false, reason: '403: Requests from referer are blocked.' })
   f.mockRestore()
 })

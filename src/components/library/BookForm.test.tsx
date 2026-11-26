@@ -30,7 +30,7 @@ test('lookup failure and empty result read differently and keep the form editabl
   expect(await screen.findByText('No matches. Fill in the details yourself.')).toBeInTheDocument()
   f.mockRejectedValue(new Error('offline'))
   fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
-  expect(await screen.findByText("Couldn't reach Google Books. Fill in the details yourself.")).toBeInTheDocument()
+  expect(await screen.findByText(/Couldn't reach Google Books \(network error\)\. Fill in the details yourself\./)).toBeInTheDocument()
   type('Pages', '12')
   expect(screen.getByLabelText('Pages')).toHaveValue('12')
 })

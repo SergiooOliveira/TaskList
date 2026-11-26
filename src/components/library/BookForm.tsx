@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { addItem, deleteItem, updateItem, type Item, type NewItem } from '../../lib/items'
-import { searchBooks, type Candidate } from '../../lib/googleBooks'
+import { searchBooks, type Candidate, type LookupError } from '../../lib/googleBooks'
 import { parsePrice } from '../../lib/price'
 import { normalizeUrl } from '../../lib/url'
 import { todayISO, updateRead, type Read } from '../../lib/reads'
@@ -33,7 +33,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
   })
   const [rating, setRating] = useState(initial.rating ?? 0)
   const [own, setOwn] = useState(initial.bought ?? true)
-  const [found, setFound] = useState<Candidate[] | { ok: false } | null>(null)
+  const [found, setFound] = useState<Candidate[] | LookupError | null>(null)
   const [errs, setErrs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -105,7 +105,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
         </div>
         {field('title', 'Title')}
         <button type="button" className="ghost" disabled={!v.title.trim()} onClick={find}>Find details</button>
-        {found && ('ok' in found ? <p>Couldn't reach Google Books. Fill in the details yourself.</p>
+        {found && ('ok' in found ? <p>Couldn't reach Google Books ({found.reason}). Fill in the details yourself.</p>
           : found.length === 0 ? <p>No matches. Fill in the details yourself.</p> : (
           <ul className="candidates" aria-label="Matches">
             {found.map((c, i) => (
