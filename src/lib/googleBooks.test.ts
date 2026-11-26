@@ -1,4 +1,4 @@
-import { isIsbn, searchBooks, toCandidate } from './googleBooks'
+import { buildQuery, findDetails, isIsbn, searchBooks, toCandidate } from './googleBooks'
 
 const volume = (info: object) => ({ volumeInfo: { title: 'Lendários', authors: ['Tracy Deonn'], pageCount: 480, language: 'pt', publishedDate: '2021-09-01', ...info } })
 
@@ -22,7 +22,7 @@ test('toCandidate tolerates missing fields', () => {
 
 test('searchBooks builds the query and survives errors', async () => {
   const f = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ items: [volume({})] }) } as Response)
-  expect(await searchBooks('9789722512345')).toHaveLength(1)
+  expect(await searchBooks('isbn:9789722512345')).toHaveLength(1)
   expect(f.mock.calls[0][0]).toBe('https://www.googleapis.com/books/v1/volumes?q=isbn%3A9789722512345&maxResults=5')
   f.mockRejectedValue(new Error('x'))
   expect(await searchBooks('x')).toMatchObject({ ok: false })
@@ -55,4 +55,23 @@ test('description becomes a plain-text summary: tags stripped, entities decoded'
   const c = toCandidate(volume({ description: '<p>Bree&#39;s <b>first</b> night &quot;at&quot; Carolina.</p><p>A secret society.<br>Arthur&amp;co.</p>' }))
   expect(c.summary).toBe('Bree\'s first night "at" Carolina.\nA secret society.\nArthur&co.')
   expect(toCandidate(volume({})).summary).toBeNull()
+})
+
+test('buildQuery uses title + author, or series + number for volume-only titles', () => {
+  expect(buildQuery({ title: 'Lendários', author: 'Tracy Deonn', series: 'The Legendborn Cycle', number: '1' })).toBe('intitle:"Lendários" inauthor:"Tracy Deonn"')
+  expect(buildQuery({ title: 'Volume I', author: 'Tsugumi Ohba', series: 'Death Note - Black Edition', number: '1' })).toBe('Death Note Black Edition 1 inauthor:"Tsugumi Ohba"')
+  expect(buildQuery({ title: 'vol. 3', series: 'Berserk', number: '3' })).toBe('Berserk 3')
+  expect(buildQuery({ title: '', series: 'One Piece', number: '' })).toBe('One Piece')
+  expect(buildQuery({ title: '978-972-25-1234-5', author: 'X' })).toBe('isbn:9789722512345')
+  expect(buildQuery({ title: '', author: 'X' })).toBeNull()
+})
+
+test('findDetails retries without the author when nothing matches', async () => {
+  const f = vi.spyOn(globalThis, 'fetch')
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ totalItems: 0 }) } as Response)
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [volume({})] }) } as Response)
+  expect(await findDetails({ title: 'Volume I', author: 'Ohba', series: 'Death Note', number: '1' })).toHaveLength(1)
+  expect(decodeURIComponent(String(f.mock.calls[0][0]))).toContain('Death Note 1 inauthor:"Ohba"')
+  expect(decodeURIComponent(String(f.mock.calls[1][0]))).toContain('q=Death Note 1&')
+  f.mockRestore()
 })

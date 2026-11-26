@@ -36,7 +36,7 @@ test('lookup failure and empty result read differently and keep the form editabl
 })
 
 test('picking a candidate fills the fields', async () => {
-  vi.spyOn(gb, 'searchBooks').mockResolvedValue([cand])
+  vi.spyOn(gb, 'findDetails').mockResolvedValue([cand])
   setup()
   type('Title', 'Lend')
   fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
@@ -52,7 +52,7 @@ test('picking a candidate fills the fields', async () => {
 })
 
 test('a match without a cover says so', async () => {
-  vi.spyOn(gb, 'searchBooks').mockResolvedValue([{ ...cand, cover: null }])
+  vi.spyOn(gb, 'findDetails').mockResolvedValue([{ ...cand, cover: null }])
   setup()
   type('Title', 'Lend')
   fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
@@ -170,7 +170,7 @@ test('dating a before-the-app read makes it a dated read', async () => {
 })
 
 test('a match fills an empty summary but never replaces one; the summary is saved', async () => {
-  vi.spyOn(gb, 'searchBooks').mockResolvedValue([{ ...cand, summary: 'From Google.' }])
+  vi.spyOn(gb, 'findDetails').mockResolvedValue([{ ...cand, summary: 'From Google.' }])
   const { onSaved } = setup()
   type('Title', 'Lend')
   fireEvent.click(screen.getByRole('button', { name: 'Find details' }))

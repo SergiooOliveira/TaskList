@@ -29,9 +29,36 @@ export function toCandidate(volume: unknown): Candidate {
 // Google's own reason (e.g. "403: Requests from referer … are blocked") is shown so a bad key setup is diagnosable.
 export type LookupError = { ok: false; reason: string }
 
-export async function searchBooks(q: string): Promise<Candidate[] | LookupError> {
+export type SearchFields = { title: string; author?: string; series?: string; number?: string }
+
+// Volume-only titles ("Volume I", "Vol. 3", "Tomo 2") say nothing to Google, so those search by series + number instead.
+const GENERIC = /^(vol(ume)?\.?|tomo|livro|book|n\.?º?)\s*[\divxlc]+$/i
+const quoted = (s: string) => `"${s.replace(/"/g, '').trim()}"`
+
+export function buildQuery({ title, author = '', series = '', number = '' }: SearchFields): string | null {
+  const t = title.trim()
+  if (isIsbn(t)) return `isbn:${t.replace(/[\s-]/g, '')}`
+  const main = !t || GENERIC.test(t)
+    ? [series.replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim(), number.trim()].filter(Boolean).join(' ')
+    : `intitle:${quoted(t)}`
+  if (!main) return null
+  return author.trim() ? `${main} inauthor:${quoted(author)}` : main
+}
+
+// Searches with the author first; if that finds nothing, tries again without it (Google's author names vary).
+export async function findDetails(f: SearchFields): Promise<Candidate[] | LookupError> {
+  const q = buildQuery(f)
+  if (!q) return []
+  const first = await searchBooks(q)
+  if (Array.isArray(first) && first.length === 0 && f.author?.trim()) {
+    const loose = buildQuery({ ...f, author: '' })
+    if (loose && loose !== q) return searchBooks(loose)
+  }
+  return first
+}
+
+export async function searchBooks(query: string): Promise<Candidate[] | LookupError> {
   try {
-    const query = isIsbn(q) ? `isbn:${q.replace(/[\s-]/g, '')}` : `intitle:${q.trim()}`
     // Keyless calls share Google's global daily quota, which is usually exhausted; a referrer-restricted key is safe in the client.
     const key = import.meta.env.VITE_GOOGLE_BOOKS_KEY
     const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5${key ? `&key=${encodeURIComponent(key)}` : ''}`)

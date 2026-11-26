@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { addItem, deleteItem, updateItem, type Item, type NewItem } from '../../lib/items'
-import { searchBooks, type Candidate, type LookupError } from '../../lib/googleBooks'
+import { findDetails, buildQuery, type Candidate, type LookupError } from '../../lib/googleBooks'
 import BookMatches from './BookMatches'
 import { parsePrice } from '../../lib/price'
 import { normalizeUrl } from '../../lib/url'
@@ -41,7 +41,8 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
   const [failure, setFailure] = useState('')
   const set = (k: keyof typeof v) => (x: string) => setV((o) => ({ ...o, [k]: x }))
 
-  const find = () => searchBooks(v.title).then(setFound)
+  const fields = { title: v.title, author: v.author, series: v.series, number: v.number }
+  const find = () => findDetails(fields).then(setFound)
   const pick = (c: Candidate) => {
     setV((o) => ({ ...o, title: c.title || o.title, author: c.authors.join(', ') || o.author,
       pages: c.pages != null ? String(c.pages) : o.pages, language: c.language ?? o.language, cover: c.cover ?? o.cover,
@@ -110,7 +111,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
         {v.cover.trim() ? <img className="cover-preview" src={v.cover.trim()} alt="Cover preview" /> : <span className="cover-preview" aria-hidden="true" />}
         <div className="edit-title">
           {field('title', 'Title')}
-          <button type="button" className="ghost" disabled={!v.title.trim()} onClick={find}>Find details</button>
+          <button type="button" className="ghost" disabled={!buildQuery(fields)} onClick={find}>Find details</button>
         </div>
       </div>
       {found && <BookMatches found={found} onPick={pick} />}
