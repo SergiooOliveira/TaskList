@@ -1,12 +1,16 @@
-export type Candidate = { title: string; authors: string[]; pages: number | null; language: string | null; cover: string | null; year: string | null }
+export type Candidate = { title: string; authors: string[]; pages: number | null; language: string | null; cover: string | null; year: string | null; summary: string | null }
 
 const LANGS: Record<string, string> = { pt: 'Portuguese', en: 'English', es: 'Spanish', fr: 'French', ja: 'Japanese' }
 
 export const isIsbn = (s: string) => /^(\d{9}[\dX]|\d{13})$/i.test(s.replace(/[\s-]/g, ''))
 
+// Google descriptions carry <p>/<b>/<br> and entities; DOMParser decodes them without running anything.
+const plainText = (html: string) =>
+  (new DOMParser().parseFromString(html.replace(/<br\s*\/?>|<\/p>/gi, '\n'), 'text/html').body.textContent ?? '').trim() || null
+
 export function toCandidate(volume: unknown): Candidate {
   const v = ((volume as { volumeInfo?: Record<string, unknown> })?.volumeInfo ?? {}) as {
-    title?: string; authors?: string[]; pageCount?: number; language?: string; publishedDate?: string
+    title?: string; description?: string; authors?: string[]; pageCount?: number; language?: string; publishedDate?: string
     imageLinks?: { thumbnail?: string; smallThumbnail?: string }
   }
   const cover = v.imageLinks?.thumbnail ?? v.imageLinks?.smallThumbnail
@@ -18,6 +22,7 @@ export function toCandidate(volume: unknown): Candidate {
     language: v.language ? LANGS[v.language.split('-')[0]] ?? v.language : null,
     cover: cover ? cover.replace(/^http:/, 'https:') : null,
     year: v.publishedDate?.slice(0, 4) || null,
+    summary: v.description ? plainText(v.description) : null,
   }
 }
 

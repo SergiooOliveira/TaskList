@@ -5,7 +5,7 @@ import type { Read } from './reads'
 const mk = (id: string, o: Partial<Item> = {}): Item => ({
   id, user_id: 'u', url: null, title: id, image_url: null, store: null, price_cents: null, previous_price_cents: null,
   price_checked_at: null, category: null, bought: true, created_at: '', collection: 'book', author: null, series: null,
-  form: null, language: null, series_number: null, pages: null, rating: null, genres: null, bought_on: null, ...o,
+  form: null, language: null, series_number: null, pages: null, rating: null, genres: null, bought_on: null, summary: null, ...o,
 })
 const rd = (item_id: string, o: Partial<Read> = {}): Read => ({ id: `r-${item_id}-${o.finished_on}`, item_id, started_on: null, finished_on: null, before_app: false, ...o })
 

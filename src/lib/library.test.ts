@@ -1,4 +1,4 @@
-import { groupBooks, groupManga, forms } from './library'
+import { groupBooks, groupManga, forms, ownedInGenre, seriesGroup } from './library'
 import type { Item } from './items'
 import type { Read } from './reads'
 
@@ -9,7 +9,7 @@ const item = (p: Partial<Item>): Item => ({
   id: `i${++n}`, user_id: 'u', url: null, title: 'x', image_url: null, store: null, price_cents: null,
   previous_price_cents: null, price_checked_at: null, category: null, bought: true, created_at: '', collection: 'book',
   author: null, series: null, form: null, language: null, series_number: null, pages: null, rating: null,
-  genres: null, bought_on: null, ...p,
+  genres: null, bought_on: null, summary: null, ...p,
 })
 const read = (item_id: string, p: Partial<Read> = {}): Read => ({ id: `r${++n}`, item_id, started_on: null, finished_on: null, before_app: false, ...p })
 
@@ -93,5 +93,29 @@ describe('groupManga', () => {
 describe('forms', () => {
   it('dedupes case-insensitively and sorts', () => {
     expect(forms([item({ form: 'Prose' }), item({ form: 'prose' }), item({ form: 'Poetry' }), item({})])).toEqual(['Poetry', 'Prose'])
+  })
+})
+
+describe('ownedInGenre', () => {
+  it('keeps owned books and manga with the genre (trimmed, any case), A–Z', () => {
+    const xs = [
+      item({ title: 'Zeta', genres: [' fantasy '] }),
+      item({ title: 'Alfa', genres: ['Fiction', 'Fantasy'], collection: 'manga' }),
+      item({ title: 'Wanted', genres: ['Fantasy'], bought: false }),
+      item({ title: 'Other', genres: ['Horror'] }),
+      item({ title: 'Gadget', genres: ['Fantasy'], collection: null }),
+      item({ title: 'None' }),
+    ]
+    expect(ownedInGenre(xs, 'FANTASY').map(i => i.title)).toEqual(['Alfa', 'Zeta'])
+  })
+})
+
+describe('seriesGroup', () => {
+  it('collects one series of one kind in number order, even a single wanted book', () => {
+    const a = legendborn('B2', 2, false), b = legendborn('B1', 1, true)
+    const other = item({ title: 'M', series: 'The Legendborn Cycle', collection: 'manga' })
+    const g = seriesGroup([a, b, other], [read(b.id, { finished_on: '2026-01-01' })], ' the legendborn cycle', 'book')
+    expect(g).toMatchObject({ name: 'The Legendborn Cycle', owned: 1, wanted: 1, read: 1 })
+    expect(g.books.map(x => x.title)).toEqual(['B1', 'B2'])
   })
 })

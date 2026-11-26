@@ -8,7 +8,7 @@ vi.mock('../../lib/supabase', () => ({ supabase: {} }))
 vi.mock('../../lib/items', async (orig) => ({ ...(await orig<typeof items>()), addItem: vi.fn(), updateItem: vi.fn(), deleteItem: vi.fn() }))
 vi.mock('../../lib/reads', async (orig) => ({ ...(await orig<typeof reads>()), updateRead: vi.fn() }))
 
-const cand: gb.Candidate = { title: 'Lendários', authors: ['Tracy Deonn'], pages: 480, language: 'Portuguese', cover: 'https://img.test/c.jpg', year: '2021' }
+const cand: gb.Candidate = { title: 'Lendários', authors: ['Tracy Deonn'], pages: 480, language: 'Portuguese', cover: 'https://img.test/c.jpg', year: '2021', summary: null }
 const setup = (props: Partial<React.ComponentProps<typeof BookForm>> = {}) => {
   const onSaved = vi.fn(), onCancel = vi.fn()
   render(<BookForm initial={{}} collection="book" forms={['Prose']} onSaved={onSaved} onCancel={onCancel} {...props} />)
@@ -62,7 +62,7 @@ test('a match without a cover says so', async () => {
 test('I want it saves an unbought book; price and genres are parsed', async () => {
   const { onSaved } = setup()
   type('Title', 'Marca')
-  type('Price (€)', '24,90')
+  type('Price paid (€)', '24,90')
   type('Genres', ' fantasy, ,YA ')
   fireEvent.click(screen.getByRole('button', { name: 'I want it' }))
   fireEvent.click(screen.getByRole('button', { name: '4 stars' }))
@@ -91,7 +91,7 @@ test('title is required and bad price blocks saving', () => {
   setup()
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(screen.getByText('Add a title')).toBeInTheDocument()
-  type('Title', 'x'); type('Price (€)', 'abc')
+  type('Title', 'x'); type('Price paid (€)', 'abc')
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(items.addItem).not.toHaveBeenCalled()
 })
@@ -109,14 +109,14 @@ test('editing an owned book updates it and its latest read dates; delete confirm
   expect(reads.updateRead).toHaveBeenCalledWith('r1', { started_on: '2026-02-01', finished_on: '2026-03-01' })
 })
 
-test('delete confirms in the dialog', async () => {
+test('delete confirms in the page', async () => {
   vi.mocked(items.deleteItem).mockResolvedValue()
   const { onSaved } = setup({ initial: { id: 'b1', title: 'Old', bought: true } })
-  fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Delete this book' }))
   expect(items.deleteItem).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
   await waitFor(() => expect(items.deleteItem).toHaveBeenCalledWith('b1'))
-  await waitFor(() => expect(onSaved).toHaveBeenCalled())
+  await waitFor(() => expect(onSaved).toHaveBeenCalledWith(true))
 })
 
 const owned = { id: 'b1', title: 'Old', bought: true, bought_on: '2026-01-01', collection: 'book' as const }
@@ -167,4 +167,29 @@ test('dating a before-the-app read makes it a dated read', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() => expect(onSaved).toHaveBeenCalled())
   expect(reads.updateRead).toHaveBeenCalledWith('pre', { started_on: '2026-02-01', finished_on: '2026-03-01', before_app: false })
+})
+
+test('a match fills an empty summary but never replaces one; the summary is saved', async () => {
+  vi.spyOn(gb, 'searchBooks').mockResolvedValue([{ ...cand, summary: 'From Google.' }])
+  const { onSaved } = setup()
+  type('Title', 'Lend')
+  fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
+  fireEvent.click(await screen.findByRole('button', { name: /Lendários/ }))
+  expect(screen.getByLabelText('Summary')).toHaveValue('From Google.')
+  type('Summary', 'Mine.')
+  fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
+  fireEvent.click(await screen.findByRole('button', { name: /Lendários/ }))
+  expect(screen.getByLabelText('Summary')).toHaveValue('Mine.')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(onSaved).toHaveBeenCalledWith(false))
+  expect(items.addItem).toHaveBeenCalledWith(expect.objectContaining({ summary: 'Mine.' }))
+})
+
+test('price is labelled as paid when owned, as a price when wanted; Cancel cancels', () => {
+  const { onCancel } = setup()
+  expect(screen.getByLabelText('Price paid (€)')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'I want it' }))
+  expect(screen.getByLabelText('Price (€)')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+  expect(onCancel).toHaveBeenCalled()
 })

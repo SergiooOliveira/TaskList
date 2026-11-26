@@ -12,7 +12,7 @@ vi.mock('../../lib/items', async (orig) => ({ ...(await orig<typeof items>()), u
 const it_ = (id: string, title: string, o: Partial<Item> = {}): Item => ({
   id, user_id: 'u', url: null, title, image_url: null, store: null, price_cents: null, previous_price_cents: null,
   price_checked_at: null, category: null, bought: false, created_at: '', collection: 'book', author: null, series: null,
-  form: null, language: null, series_number: null, pages: null, rating: null, genres: null, bought_on: null, ...o,
+  form: null, language: null, series_number: null, pages: null, rating: null, genres: null, bought_on: null, summary: null, ...o,
 })
 const today = todayISO()
 beforeEach(() => {

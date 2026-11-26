@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { formatEuro, type Item } from '../../lib/items'
 import { canStart, finishRead, openRead, readState, startRead, todayISO, type Read } from '../../lib/reads'
 import type { SeriesGroup } from '../../lib/library'
+import { href } from '../../lib/route'
 
 export function Cover({ item, className = 'cover' }: { item?: Item; className?: string }) {
   return item?.image_url
@@ -9,21 +10,25 @@ export function Cover({ item, className = 'cover' }: { item?: Item; className?: 
     : <span className={className} aria-hidden="true" />
 }
 
-// Title links to the product page only when there is one (no <a> without href).
-export const Title = ({ item, onEdit }: { item: Item; onEdit?: (i: Item) => void }) => (
-  <div className="title">
-    {item.url ? <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a> : item.title}
-    {onEdit && <button type="button" className="edit" aria-label={`Edit ${item.title}`} onClick={() => onEdit(item)}>✎</button>}
-  </div>
+// The title is the row's link to the details screen; CSS stretches it over the row, action buttons sit above it.
+export const Title = ({ item }: { item: Item }) => (
+  <div className="title"><a className="open" href={href({ name: 'item', id: item.id, edit: false })}>{item.title}</a></div>
 )
 
 export const seriesLabel = (i: Item) => i.series ? `${i.series}${i.series_number !== null ? ` #${i.series_number}` : ''}` : null
 const day = (iso: string) => new Date(`${iso}T00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 
-type Props = { item: Item; reads: Read[]; onEdit?: (i: Item) => void; onChange: (r: Read) => void; onError: (e: unknown) => void }
+type ReadProps = { item: Item; reads: Read[]; onChange: (r: Read) => void; onError: (e: unknown) => void }
 
-// One owned book with its state line and one action: Finished / Start / stars or Read again.
-export default function BookRow({ item, reads, onEdit, onChange, onError }: Props) {
+export const readStatus = (reads: Read[]) => {
+  const open = openRead(reads)
+  return open ? `since ${open.started_on ? day(open.started_on) : '…'}`
+    : readState(reads) === 'unread' ? 'not started'
+    : reads.every((r) => r.before_app) ? 'Read before the app' : 'read'
+}
+
+// The one reading action: Finished / Start / Read again; a rated read book shows its stars instead unless stars={false}.
+export function ReadAction({ item, reads, onChange, onError, stars = true }: ReadProps & { stars?: boolean }) {
   const [busy, setBusy] = useState(false) // a double tap must not start two reads
   const state = readState(reads)
   const open = openRead(reads)
@@ -32,36 +37,38 @@ export default function BookRow({ item, reads, onEdit, onChange, onError }: Prop
     p().then(onChange, onError).finally(() => setBusy(false))
   }
   const start = () => canStart(reads) && run(() => startRead(item.id, todayISO()))
-  const status = open ? `since ${open.started_on ? day(open.started_on) : '…'}`
-    : state === 'unread' ? 'not started'
-    : reads.every((r) => r.before_app) ? 'Read before the app' : 'read'
+  return open ? (
+    <button className="act on" disabled={busy} onClick={() => run(() => finishRead(open.id, todayISO()))}>Finished</button>
+  ) : state === 'unread' ? (
+    <button className="act" disabled={busy} onClick={start}>Start</button>
+  ) : stars && item.rating ? (
+    <span className="stars" role="img" aria-label={`Rated ${item.rating} out of 5`}>{'★'.repeat(item.rating)}{'☆'.repeat(Math.max(0, 5 - item.rating))}</span>
+  ) : (
+    <button className="act" disabled={busy} onClick={start}>Read again</button>
+  )
+}
 
+// One owned book with its state line and one action.
+export default function BookRow({ item, reads, onChange, onError }: ReadProps) {
+  const status = readStatus(reads)
   return (
     <div className="book">
       <Cover item={item} />
       <div className="body">
-        <Title item={item} onEdit={onEdit} />
-        <div className="sub">{(open ? [seriesLabel(item) ?? item.author, status] : [item.author, seriesLabel(item), status]).filter(Boolean).join(' · ')}</div>
+        <Title item={item} />
+        <div className="sub">{(openRead(reads) ? [seriesLabel(item) ?? item.author, status] : [item.author, seriesLabel(item), status]).filter(Boolean).join(' · ')}</div>
       </div>
-      {open ? (
-        <button className="act on" disabled={busy} onClick={() => run(() => finishRead(open.id, todayISO()))}>Finished</button>
-      ) : state === 'unread' ? (
-        <button className="act" disabled={busy} onClick={start}>Start</button>
-      ) : item.rating ? (
-        <span className="stars" role="img" aria-label={`Rated ${item.rating} out of 5`}>{'★'.repeat(item.rating)}{'☆'.repeat(Math.max(0, 5 - item.rating))}</span>
-      ) : (
-        <button className="act" disabled={busy} onClick={start}>Read again</button>
-      )}
+      <ReadAction item={item} reads={reads} onChange={onChange} onError={onError} />
     </div>
   )
 }
 
-export function WantedBookRow({ item, onBought, onEdit, busy = false }: { item: Item; onBought: (i: Item) => void; onEdit?: (i: Item) => void; busy?: boolean }) {
+export function WantedBookRow({ item, onBought, busy = false }: { item: Item; onBought: (i: Item) => void; busy?: boolean }) {
   return (
     <div className="book wanted">
       <Cover item={item} />
       <div className="body">
-        <Title item={item} onEdit={onEdit} />
+        <Title item={item} />
         <div className="sub">{[item.author, seriesLabel(item)].filter(Boolean).join(' · ')}</div>
         <div className="meta">
           {item.price_cents !== null && <span className="price">{formatEuro(item.price_cents)}</span>}

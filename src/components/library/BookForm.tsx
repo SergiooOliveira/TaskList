@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { addItem, deleteItem, updateItem, type Item, type NewItem } from '../../lib/items'
 import { searchBooks, type Candidate, type LookupError } from '../../lib/googleBooks'
+import BookMatches from './BookMatches'
 import { parsePrice } from '../../lib/price'
 import { normalizeUrl } from '../../lib/url'
 import { todayISO, updateRead, type Read } from '../../lib/reads'
@@ -19,7 +20,7 @@ type Props = {
   collection: 'book' | 'manga'
   forms: string[]
   reads?: Read[] // the book's reads; the latest one's dates are editable
-  onSaved: () => void // also called after a delete: the caller reloads
+  onSaved: (deleted: boolean) => void // the caller reloads
   onCancel: () => void
 }
 
@@ -29,7 +30,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
     title: text(initial.title), author: text(initial.author), series: text(initial.series), number: text(initial.series_number),
     form: text(initial.form), genres: (initial.genres ?? []).join(', '), pages: text(initial.pages), language: text(initial.language),
     price: initial.price_cents != null ? (initial.price_cents / 100).toFixed(2).replace('.', ',') : '', store: text(initial.store),
-    cover: text(initial.image_url), started: text(latest?.started_on), finished: text(latest?.finished_on),
+    cover: text(initial.image_url), summary: text(initial.summary), started: text(latest?.started_on), finished: text(latest?.finished_on),
   })
   const [rating, setRating] = useState(initial.rating ?? 0)
   const [own, setOwn] = useState(initial.bought ?? true)
@@ -38,14 +39,13 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
   const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [failure, setFailure] = useState('')
-  const dialog = useRef<HTMLDialogElement>(null)
-  useEffect(() => dialog.current?.showModal(), [])
   const set = (k: keyof typeof v) => (x: string) => setV((o) => ({ ...o, [k]: x }))
 
   const find = () => searchBooks(v.title).then(setFound)
   const pick = (c: Candidate) => {
     setV((o) => ({ ...o, title: c.title || o.title, author: c.authors.join(', ') || o.author,
-      pages: c.pages != null ? String(c.pages) : o.pages, language: c.language ?? o.language, cover: c.cover ?? o.cover }))
+      pages: c.pages != null ? String(c.pages) : o.pages, language: c.language ?? o.language, cover: c.cover ?? o.cover,
+      summary: o.summary.trim() ? o.summary : c.summary ?? '' })) // never overwrite a summary the user already has
     setFound(null)
   }
 
@@ -72,7 +72,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
     const fields: NewItem = {
       title: v.title.trim(), author: n(v.author), series: n(v.series), series_number: number ?? null, form: n(v.form),
       genres: genres.length ? genres : null, pages: pages ?? null, language: n(v.language), price_cents: cents ?? null,
-      store: n(v.store), image_url: cover, rating: rating || null,
+      store: n(v.store), image_url: cover, summary: n(v.summary), rating: rating || null,
       bought: own, bought_on: own ? (initial.bought ? initial.bought_on ?? null : todayISO()) : null, // owned stays as-is (imports have no date)
     }
     run(async () => {
@@ -83,72 +83,71 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
       } else await addItem({ ...fields, collection })
     })
   }
-  const run = (p: () => Promise<unknown>) => {
+  const run = (p: () => Promise<unknown>, deleted = false) => {
     setSaving(true); setFailure('')
-    p().then(onSaved, (x) => { setFailure(x instanceof Error ? x.message : 'Something went wrong.'); setSaving(false) })
+    p().then(() => onSaved(deleted), (x) => { setFailure(x instanceof Error ? x.message : 'Something went wrong.'); setSaving(false) })
   }
 
+  const err = (k: string) => errs[k] && <small role="alert">{errs[k]}</small>
   const field = (k: keyof typeof v, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <div>
       <label>{label}<input value={v[k]} onChange={(e) => set(k)(e.target.value)} aria-invalid={!!errs[k]} {...props} /></label>
-      {errs[k] && <small role="alert">{errs[k]}</small>}
+      {err(k)}
     </div>
   )
+  const name = initial.id ? 'Edit book' : 'Add book'
 
   return (
-    <dialog ref={dialog} className="modal bookform" aria-label={initial.id ? 'Edit book' : 'Add book'} onClose={onCancel}
-      onClick={(e) => e.target === e.currentTarget && onCancel()}>
-      <form className="form" onSubmit={submit} noValidate>
-        <div className="row head">
-          <b>{initial.id ? 'Edit book' : 'Add book'}</b>
-          <button type="button" className="close" aria-label="Close" onClick={onCancel}>✕</button>
+    <form className="form bookform" aria-label={name} onSubmit={submit} noValidate>
+      <header className="edit-head">
+        <button type="button" className="cancel" onClick={onCancel}>Cancel</button>
+        <h1>{name}</h1>
+        <button type="submit" disabled={saving}>Save</button>
+      </header>
+      <div className="edit-top">
+        {v.cover.trim() ? <img className="cover-preview" src={v.cover.trim()} alt="Cover preview" /> : <span className="cover-preview" aria-hidden="true" />}
+        <div className="edit-title">
+          {field('title', 'Title')}
+          <button type="button" className="ghost" disabled={!v.title.trim()} onClick={find}>Find details</button>
         </div>
-        {field('title', 'Title')}
-        <button type="button" className="ghost" disabled={!v.title.trim()} onClick={find}>Find details</button>
-        {found && ('ok' in found ? <p>Couldn't reach Google Books ({found.reason}). Fill in the details yourself.</p>
-          : found.length === 0 ? <p>No matches. Fill in the details yourself.</p> : (
-          <ul className="candidates" aria-label="Matches">
-            {found.map((c, i) => (
-              <li key={i}><button type="button" onClick={() => pick(c)}>
-                {c.cover ? <img src={c.cover} alt="" /> : <span className="nocover">No cover</span>}
-                <span>{c.title}{c.authors.length > 0 && ` · ${c.authors.join(', ')}`}{c.year && ` · ${c.year}`}</span>
-              </button></li>
-            ))}
-          </ul>
-        ))}
+      </div>
+      {found && <BookMatches found={found} onPick={pick} />}
+      <section>
+        <h2>BOOK</h2>
         {field('author', 'Author')}
-        {field('series', 'Series')}
-        {field('number', 'Number', { inputMode: 'numeric' })}
-        <TypePicker label="Form" value={v.form} onChange={set('form')} types={forms} />
+        <div className="pair narrow">{field('series', 'Series')}{field('number', 'Number', { inputMode: 'numeric' })}</div>
+        <label>Summary<textarea rows={4} value={v.summary} onChange={(e) => set('summary')(e.target.value)} /></label>
+      </section>
+      <section>
+        <h2>DETAILS</h2>
+        <div className="pair"><TypePicker label="Form" value={v.form} onChange={set('form')} types={forms} />{field('pages', 'Pages', { inputMode: 'numeric' })}</div>
         {field('genres', 'Genres')}
-        {field('pages', 'Pages', { inputMode: 'numeric' })}
-        {field('language', 'Language')}
-        {field('price', 'Price (€)')}
-        {field('store', 'Store')}
-        {field('cover', 'Cover URL')}
-        {v.cover.trim() && <img className="cover-preview" src={v.cover.trim()} alt="Cover preview" />}
-        <div role="group" aria-label="Rating" className="rating">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} type="button" aria-pressed={rating === n} aria-label={`${n} star${n === 1 ? '' : 's'}`}
-              onClick={() => setRating(rating === n ? 0 : n)}>{n <= rating ? '★' : '☆'}</button>
-          ))}
-        </div>
+        <div className="pair">{field('language', 'Language')}{field('cover', 'Cover URL', { inputMode: 'url' })}</div>
+      </section>
+      <section>
+        <h2>MY COPY</h2>
         <div role="group" aria-label="Ownership" className="lib-switch own">
           {[true, false].map((o) => (
             <button key={String(o)} type="button" aria-pressed={own === o} onClick={() => setOwn(o)}>{o ? 'I own it' : 'I want it'}</button>
           ))}
         </div>
-        {initial.id && own && latest && <>{field('started', 'Started on', { type: 'date' })}{field('finished', 'Finished on', { type: 'date' })}</>}
-        {failure && <p role="alert">{failure}</p>}
-        <button type="submit" disabled={saving}>Save</button>
-        {initial.id && (confirming ? (
-          <div className="row">
-            <span>Delete this book?</span>
-            <button type="button" disabled={saving} onClick={() => run(() => deleteItem(initial.id!))}>Yes</button>
-            <button type="button" onClick={() => setConfirming(false)}>No</button>
-          </div>
-        ) : <button type="button" className="ghost" onClick={() => setConfirming(true)}>Delete</button>)}
-      </form>
-    </dialog>
+        <div className="pair">{field('price', own ? 'Price paid (€)' : 'Price (€)')}{field('store', 'Store')}</div>
+        {initial.id && own && latest && <div className="pair">{field('started', 'Started on', { type: 'date' })}{field('finished', 'Finished on', { type: 'date' })}</div>}
+        <div role="group" aria-label="Rating" className="rating">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button key={n} type="button" aria-pressed={rating === n} aria-label={`${n} star${n === 1 ? '' : 's'}`}
+              className={n <= rating ? 'on' : undefined} onClick={() => setRating(rating === n ? 0 : n)}>★</button>
+          ))}
+        </div>
+      </section>
+      {failure && <p role="alert">{failure}</p>}
+      {initial.id && (confirming ? (
+        <div className="row confirm">
+          <span>Delete this book?</span>
+          <button type="button" className="danger" disabled={saving} onClick={() => run(() => deleteItem(initial.id!), true)}>Yes</button>
+          <button type="button" onClick={() => setConfirming(false)}>No</button>
+        </div>
+      ) : <button type="button" className="danger" onClick={() => setConfirming(true)}>Delete this book</button>)}
+    </form>
   )
 }

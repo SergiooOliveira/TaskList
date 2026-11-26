@@ -10,7 +10,7 @@ test('isIsbn', () => {
 
 test('toCandidate upgrades http covers and maps language', () => {
   const c = toCandidate(volume({ imageLinks: { thumbnail: 'http://books.google.com/x' } }))
-  expect(c).toEqual({ title: 'Lendários', authors: ['Tracy Deonn'], pages: 480, language: 'Portuguese', cover: 'https://books.google.com/x', year: '2021' })
+  expect(c).toEqual({ title: 'Lendários', authors: ['Tracy Deonn'], pages: 480, language: 'Portuguese', cover: 'https://books.google.com/x', year: '2021', summary: null })
   expect(toCandidate(volume({ language: 'de' })).language).toBe('de')
 })
 
@@ -49,4 +49,10 @@ test('searchBooks reports Google\'s reason on a refused request', async () => {
 
 test('regional language codes map to the base language', () => {
   expect(toCandidate(volume({ language: 'pt-BR' })).language).toBe('Portuguese')
+})
+
+test('description becomes a plain-text summary: tags stripped, entities decoded', () => {
+  const c = toCandidate(volume({ description: '<p>Bree&#39;s <b>first</b> night &quot;at&quot; Carolina.</p><p>A secret society.<br>Arthur&amp;co.</p>' }))
+  expect(c.summary).toBe('Bree\'s first night "at" Carolina.\nA secret society.\nArthur&co.')
+  expect(toCandidate(volume({})).summary).toBeNull()
 })

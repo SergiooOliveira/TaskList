@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
-import { boughtPatch, formatEuro, listItems, updateItem, type Item } from '../../lib/items'
-import { listReads, readState, todayISO, type Read } from '../../lib/reads'
-import { forms, groupBooks, groupManga, type SeriesGroup } from '../../lib/library'
+import { useEffect, useState } from 'react'
+import { boughtPatch, formatEuro, updateItem, type Item } from '../../lib/items'
+import { readState, todayISO, type Read } from '../../lib/reads'
+import { forms, groupBooks, groupManga, nextInSeries, type SeriesGroup } from '../../lib/library'
 import { href, type Kind } from '../../lib/route'
 import BookForm from './BookForm'
 import SeriesPanel from './SeriesPanel'
@@ -9,32 +9,19 @@ import VolumePanel from './VolumePanel'
 import BookRow, { SeriesRow, WantedBookRow } from './BookRow'
 import { MangaShelfRow, MangaWishCard, sumCents } from './MangaRow'
 import { HiganbanaArt, NightshadeArt } from './themes'
+import { useLibraryData } from './useLibraryData'
 
 type View = 'shelf' | 'wishlist'
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 export default function Library({ kind, view }: { kind: Kind; view: View }) {
-  const [data, setData] = useState<{ items: Item[]; reads: Read[] } | null>(null)
-  const [failed, setFailed] = useState(false)
-  const [error, setError] = useState('')
+  const { data, failed, error, load, fail, saveRead, saveItems } = useLibraryData()
   const [form, setForm] = useState<string | null>(null)
-  const [editing, setEditing] = useState<Partial<Item> | null>(null) // BookForm initial values
+  const [editing, setEditing] = useState<Partial<Item> | null>(null) // new-book BookForm initial values
   const [panel, setPanel] = useState<{ kind: 'series' | 'manga' | 'volumes'; name: string } | null>(null)
 
   useEffect(() => { try { sessionStorage.setItem('libKind', kind) } catch { /* private mode */ } }, [kind])
 
-  const load = useCallback(() => {
-    setFailed(false)
-    Promise.all([listItems(), listReads()]).then(([items, reads]) => setData({ items, reads }), () => setFailed(true))
-  }, [])
-  useEffect(load, [load])
-
-  const fail = (e: unknown) => {
-    setError(e instanceof Error ? e.message : 'Something went wrong.')
-    setTimeout(() => setError(''), 4000)
-  }
-  const saveRead = (r: Read) => setData((d) => d && { ...d, reads: [...d.reads.filter((x) => x.id !== r.id), r] })
-  const saveItems = (us: Item[]) => setData((d) => d && { ...d, items: d.items.map((x) => us.find((u) => u.id === x.id) ?? x) })
   const buy = (it: Item) => updateItem(it.id, boughtPatch(true, todayISO())).then((u) => saveItems([u]), fail)
 
   const mine = data?.items.filter((i) => i.collection === kind) ?? []
@@ -52,8 +39,17 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
     : kind === 'book' ? <>{hl(plural(owned.length, 'book'))} on your shelf, {hl(String(owned.filter((i) => readState(readsOf(i)) === 'reading').length))} being read.</>
     : <>{hl(plural(owned.length, 'volume'))} from {hl(String(groupManga(mine, reads).filter((s) => s.owned.length).length))} series on your shelf.</>
 
+  const theme = `library ${kind === 'book' ? 'theme-nightshade' : 'theme-higanbana'}`
+  // Adding a book takes over the screen; the shelf (and any open panel) comes back on Cancel or Save.
+  if (editing) return (
+    <div className={theme}>
+      <div className="lib-art" aria-hidden="true" />
+      <BookForm initial={editing} collection={kind} forms={allForms} onCancel={() => setEditing(null)} onSaved={() => { setEditing(null); load() }} />
+    </div>
+  )
+
   return (
-    <div className={`library ${kind === 'book' ? 'theme-nightshade' : 'theme-higanbana'}`}>
+    <div className={theme}>
       {kind === 'book' ? <NightshadeArt /> : <HiganbanaArt />}
       <header className="lib-head">
         <div>
@@ -97,9 +93,9 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
         </div>
       ) : data && (
         <div className="lib-list">
-          {kind === 'book' && view === 'shelf' && <BookShelf items={shown} reads={reads} onEdit={setEditing} onChange={saveRead} onError={fail} onOpen={(name) => setPanel({ kind: 'series', name })} />}
+          {kind === 'book' && view === 'shelf' && <BookShelf items={shown} reads={reads} onChange={saveRead} onError={fail} onOpen={(name) => setPanel({ kind: 'series', name })} />}
           {kind === 'book' && view === 'wishlist' && <>
-            {shown.filter((i) => !i.bought).map((i) => <WantedBookRow key={i.id} item={i} onBought={buy} onEdit={setEditing} />)}
+            {shown.filter((i) => !i.bought).map((i) => <WantedBookRow key={i.id} item={i} onBought={buy} />)}
             <p className="foot">{wanted.length ? 'Tick Bought and the book moves to your shelf.' : 'Nothing wanted yet.'}</p>
           </>}
           {kind === 'manga' && <MangaList series={groupManga(shown, reads)} view={view} onChoose={(name) => setPanel({ kind: 'volumes', name })} onOpen={(name) => setPanel({ kind: 'manga', name })} />}
@@ -109,17 +105,12 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
         const group = panel.kind === 'series' ? groupBooks(mine, reads).series.find((s) => s.name === panel.name)
           : toGroup(groupManga(mine, reads).find((s) => s.name === panel.name))
         return group && <SeriesPanel group={group} reads={reads} onClose={() => setPanel(null)} onChange={saveRead}
-          onBought={(u) => saveItems([u])} onError={fail} onEdit={setEditing} onAddToSeries={(name, author) => setEditing({
-            series: name, author, bought: false,
-            series_number: Math.max(0, ...mine.filter((i) => i.series === name).map((i) => i.series_number ?? 0)) + 1,
-          })} />
+          onBought={(u) => saveItems([u])} onError={fail} onAddToSeries={(name, author) => setEditing({ series: name, author, bought: false, series_number: nextInSeries(mine, name) })} />
       })()}
       {data && panel?.kind === 'volumes' && (() => {
         const series = groupManga(mine, reads).find((s) => s.name === panel.name)
         return series && <VolumePanel series={series} onClose={() => setPanel(null)} onMoved={saveItems} onError={fail} />
       })()}
-      {editing && <BookForm initial={editing} collection={kind} forms={allForms} reads={editing.id ? readsOf(editing as Item) : []}
-        onCancel={() => setEditing(null)} onSaved={() => { setEditing(null); load() }} />}
     </div>
   )
 }
@@ -130,9 +121,9 @@ const toGroup = (s?: ReturnType<typeof groupManga>[number]): SeriesGroup | undef
   books: [...s.owned, ...s.wanted].sort((a, b) => (a.series_number ?? Infinity) - (b.series_number ?? Infinity)),
 }
 
-function BookShelf({ items, reads, onEdit, onChange, onError, onOpen }: { items: Item[]; reads: Read[]; onEdit: (i: Item) => void; onChange: (r: Read) => void; onError: (e: unknown) => void; onOpen: (name: string) => void }) {
+function BookShelf({ items, reads, onChange, onError, onOpen }: { items: Item[]; reads: Read[]; onChange: (r: Read) => void; onError: (e: unknown) => void; onOpen: (name: string) => void }) {
   const g = groupBooks(items, reads)
-  const row = (i: Item) => <BookRow key={i.id} item={i} reads={reads.filter((r) => r.item_id === i.id)} onEdit={onEdit} onChange={onChange} onError={onError} />
+  const row = (i: Item) => <BookRow key={i.id} item={i} reads={reads.filter((r) => r.item_id === i.id)} onChange={onChange} onError={onError} />
   if (!g.reading.length && !g.series.length && !g.singles.length) return <p className="foot">Nothing on your shelf yet.</p>
   return <>
     {g.reading.length > 0 && <><h2>READING NOW</h2>{g.reading.map(row)}</>}

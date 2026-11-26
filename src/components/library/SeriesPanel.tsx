@@ -17,10 +17,10 @@ export const roman = (n: number | null) => {
 type Props = {
   group: SeriesGroup; reads: Read[]; onClose: () => void; onChange: (r: Read) => void
   onAddToSeries: (name: string, author: string | null) => void
-  onEdit?: (i: Item) => void; onBought?: (i: Item) => void; onError?: (e: unknown) => void
+  onBought?: (i: Item) => void; onError?: (e: unknown) => void
 }
 
-export default function SeriesPanel({ group, reads, onClose, onChange, onAddToSeries, onEdit, onBought, onError }: Props) {
+export default function SeriesPanel({ group, reads, onClose, onChange, onAddToSeries, onBought, onError }: Props) {
   const [busy, setBusy] = useState<string | null>(null) // a double tap must not send two updates
   const buy = (it: Item) => {
     setBusy(it.id)
@@ -35,8 +35,8 @@ export default function SeriesPanel({ group, reads, onClose, onChange, onAddToSe
           <div key={b.id} className="sheet-book">
             <span className="num">{roman(b.series_number)}</span>
             {b.bought
-              ? <BookRow item={b} reads={reads.filter((r) => r.item_id === b.id)} onChange={onChange} onEdit={onEdit} onError={(e) => onError?.(e)} />
-              : <WantedBookRow item={b} onEdit={onEdit} busy={busy === b.id} onBought={buy} />}
+              ? <BookRow item={b} reads={reads.filter((r) => r.item_id === b.id)} onChange={onChange} onError={(e) => onError?.(e)} />
+              : <WantedBookRow item={b} busy={busy === b.id} onBought={buy} />}
           </div>
         ))}
       </div>

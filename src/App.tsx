@@ -8,6 +8,8 @@ import { useRoute } from './lib/route'
 import Background from './components/Background'
 import Stats from './components/library/Stats'
 import Library from './components/library/Library'
+import ItemPage from './components/library/ItemPage'
+import GenreList from './components/library/GenreList'
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -26,8 +28,11 @@ export default function App() {
 
   return (
     <div className="mock">
-      {!(session && (route.name === 'library' || route.name === 'stats')) && <Background />}
-      {ready && (!session ? <Login /> : route.name === 'wishlist' ? <Wishlist /> : route.name === 'home' ? <Home /> : route.name === 'library' ? <Library kind={route.kind} view={route.view} /> : <Stats />)}
+      {!(session && route.name !== 'home' && route.name !== 'wishlist') && <Background />}
+      {ready && (!session ? <Login /> : route.name === 'wishlist' ? <Wishlist /> : route.name === 'home' ? <Home />
+        : route.name === 'library' ? <Library kind={route.kind} view={route.view} />
+        : route.name === 'item' ? <ItemPage id={route.id} edit={route.edit} />
+        : route.name === 'genre' ? <GenreList genre={route.genre} /> : <Stats />)}
     </div>
   )
 }

@@ -37,19 +37,21 @@ function volumeRange(nums: number[]): string {
   return runs.join(', ')
 }
 
+function toSeriesGroup(name: string, books: Item[], state: (i: Item) => string): SeriesGroup {
+  const sorted = [...books].sort(byNumber)
+  return {
+    name, author: sorted.find(b => b.author)?.author ?? null, books: sorted,
+    owned: sorted.filter(b => b.bought).length, wanted: sorted.filter(b => !b.bought).length,
+    read: sorted.filter(b => state(b) === 'read').length,
+  }
+}
+
 export function groupBooks(items: Item[], reads: Read[]): BookGroups {
   const state = stateOf(reads)
   const grouped = bySeries(items.filter(i => i.series?.trim()), i => i.series!)
   const series: SeriesGroup[] = grouped
     .filter(g => g.items.length >= 2)
-    .map(({ name, items: books }) => {
-      const sorted = [...books].sort(byNumber)
-      return {
-        name, author: sorted.find(b => b.author)?.author ?? null, books: sorted,
-        owned: sorted.filter(b => b.bought).length, wanted: sorted.filter(b => !b.bought).length,
-        read: sorted.filter(b => state(b) === 'read').length,
-      }
-    })
+    .map(g => toSeriesGroup(g.name, g.items, state))
     .filter(s => s.owned > 0) // Shelf = owned; wanted-only series belong to the wishlist
     .sort((a, b) => a.name.localeCompare(b.name))
   const inGroup = new Set(series.flatMap(s => s.books.map(b => b.id)))
@@ -78,4 +80,20 @@ export function forms(items: Item[]): string[] {
   const seen = new Map<string, string>()
   for (const i of items) if (i.form && !seen.has(i.form.toLowerCase())) seen.set(i.form.toLowerCase(), i.form)
   return [...seen.values()].sort((a, b) => a.localeCompare(b))
+}
+
+// Every item of one kind in a series (any size, owned or not), for the series panel opened from a book's details.
+export function seriesGroup(items: Item[], reads: Read[], series: string, kind: Item['collection']): SeriesGroup {
+  const k = series.trim().toLowerCase()
+  const books = items.filter(i => i.collection === kind && i.series?.trim().toLowerCase() === k)
+  return toSeriesGroup(books[0]?.series?.trim() ?? series.trim(), books, stateOf(reads))
+}
+
+// The next number in a series, for "+ Add a book".
+export const nextInSeries = (items: Item[], series: string) =>
+  Math.max(0, ...items.filter(i => i.series === series).map(i => i.series_number ?? 0)) + 1
+
+export function ownedInGenre(items: Item[], genre: string): Item[] {
+  const g = genre.trim().toLowerCase()
+  return items.filter(i => i.bought && (i.collection === 'book' || i.collection === 'manga') && i.genres?.some(x => x.trim().toLowerCase() === g)).sort(byTitle)
 }

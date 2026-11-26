@@ -12,7 +12,7 @@ vi.mock('../../lib/reads', async (orig) => ({ ...(await orig<typeof reads>()), l
 const book = (id: string, title: string, o: Partial<Item> = {}): Item => ({
   id, user_id: 'u', url: null, title, image_url: null, store: null, price_cents: null, previous_price_cents: null,
   price_checked_at: null, category: null, bought: true, created_at: '', collection: 'book', author: null, series: null,
-  form: 'Prose', language: null, series_number: null, pages: null, rating: null, genres: null, bought_on: null, ...o,
+  form: 'Prose', language: null, series_number: null, pages: null, rating: null, genres: null, bought_on: null, summary: null, ...o,
 })
 const rd = (id: string, item_id: string, o: Partial<Read> = {}): Read => ({ id, item_id, started_on: null, finished_on: null, before_app: false, ...o })
 
@@ -138,7 +138,8 @@ it('+ opens the book form and saving reloads the list', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() => expect(items.addItem).toHaveBeenCalledWith(expect.objectContaining({ title: 'Novo', collection: 'book' })))
   await waitFor(() => expect(reads.listReads).toHaveBeenCalledTimes(2))
-  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Add book' })).toBeNull())
+  await waitFor(() => expect(screen.queryByRole('form', { name: 'Add book' })).toBeNull())
+  expect(screen.getByRole('heading', { name: 'READING NOW' })).toBeInTheDocument()
 })
 
 it('series + Add a book prefills series, author and next number as wanted', async () => {
@@ -151,22 +152,34 @@ it('series + Add a book prefills series, author and next number as wanted', asyn
   expect(screen.getByRole('button', { name: 'I want it' })).toHaveAttribute('aria-pressed', 'true')
 })
 
-it('the edit button on a book opens the form filled in', async () => {
+it('a row opens its details through its title link; Start and Bought do not navigate', async () => {
+  window.location.hash = '#/library/book/shelf'
+  vi.mocked(reads.startRead).mockResolvedValue(rd('r-new', 'forj', { started_on: today }))
   render(<Library kind="book" view="shelf" />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Edit A templária' }))
-  expect(screen.getByLabelText('Title')).toHaveValue('A templária')
+  const r = row(await screen.findByText('Forjados pelo Destino').then((e) => e.textContent!))
+  expect(within(r).getByRole('link', { name: 'Forjados pelo Destino' })).toHaveAttribute('href', '#/item/forj')
+  expect(within(r).queryByRole('button', { name: /Edit/ })).toBeNull()
+  fireEvent.click(within(r).getByRole('button', { name: 'Start' }))
+  expect(reads.startRead).toHaveBeenCalled()
+  expect(window.location.hash).toBe('#/library/book/shelf')
+  cleanup()
+  render(<Library kind="book" view="wishlist" />)
+  const w = await screen.findByText('Marca de Sangue').then((e) => e.closest('.book') as HTMLElement)
+  expect(within(w).getByRole('link', { name: 'Marca de Sangue' })).toHaveAttribute('href', '#/item/marca')
+  fireEvent.click(within(w).getByLabelText('Bought'))
+  expect(window.location.hash).toBe('#/library/book/shelf')
 })
 
-it('Edit inside a series panel opens the form for that book', async () => {
+it('rows inside a series panel link to their details', async () => {
   render(<Library kind="book" view="shelf" />)
   fireEvent.click(await screen.findByRole('button', { name: /The Legendborn Cycle/ }))
-  fireEvent.click(screen.getByRole('button', { name: 'Edit Marca de Sangue' }))
-  expect(screen.getByLabelText('Title')).toHaveValue('Marca de Sangue')
+  const panel = screen.getByRole('dialog', { name: 'The Legendborn Cycle' })
+  expect(within(panel).getByRole('link', { name: 'Marca de Sangue' })).toHaveAttribute('href', '#/item/marca')
+  expect(within(panel).getByRole('link', { name: 'Lendários' })).toHaveAttribute('href', '#/item/lend')
 })
 
-it('tapping a manga shelf row opens its volumes with Edit buttons', async () => {
+it('tapping a manga shelf row opens its volumes, each linking to details', async () => {
   render(<Library kind="manga" view="shelf" />)
   fireEvent.click(await screen.findByRole('button', { name: /Demon Slayer/ }))
-  fireEvent.click(screen.getByRole('button', { name: 'Edit Demon Slayer 2' }))
-  expect(screen.getByLabelText('Title')).toHaveValue('Demon Slayer 2')
+  expect(screen.getByRole('link', { name: 'Demon Slayer 2' })).toHaveAttribute('href', '#/item/ds2')
 })

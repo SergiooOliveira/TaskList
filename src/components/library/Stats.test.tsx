@@ -11,7 +11,7 @@ vi.mock('../../lib/reads', async (orig) => ({ ...(await orig<typeof reads>()), l
 const book = (id: string, o: Partial<Item> = {}): Item => ({
   id, user_id: 'u', url: null, title: id, image_url: null, store: 'Bertrand', price_cents: 1000, previous_price_cents: null,
   price_checked_at: null, category: null, bought: true, created_at: '', collection: 'book', author: null, series: null,
-  form: null, language: null, series_number: null, pages: 100, rating: null, genres: null, bought_on: '2026-03-01', ...o,
+  form: null, language: null, series_number: null, pages: 100, rating: null, genres: null, bought_on: '2026-03-01', summary: null, ...o,
 })
 
 beforeEach(() => {

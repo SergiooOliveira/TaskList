@@ -23,6 +23,7 @@ export type Item = {
   rating: number | null
   genres: string[] | null
   bought_on: string | null
+  summary: string | null
 }
 
 export type NewItem = Partial<Omit<Item, 'id' | 'user_id' | 'created_at'>> & { title: string }
