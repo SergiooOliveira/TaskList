@@ -3,10 +3,13 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import Login from './components/Login'
 import Wishlist from './components/Wishlist'
+import Home from './components/Home'
+import { useRoute } from './lib/route'
 import Background from './components/Background'
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
+  const route = useRoute()
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -22,7 +25,9 @@ export default function App() {
   return (
     <div className="mock">
       <Background />
-      {ready && (session ? <Wishlist session={session} /> : <Login />)}
+      {ready && (!session ? <Login /> : route.name === 'wishlist' ? <Wishlist /> : route.name === 'home' ? <Home /> : (
+        <><a href="#/">‹ Collections</a><p>Library coming soon</p></>
+      ))}
     </div>
   )
 }

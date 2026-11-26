@@ -10,12 +10,12 @@ vi.mock('../lib/items', async (orig) => ({
 }))
 
 const mk = (id: string, title: string, o: Partial<Item> = {}) =>
-  ({ id, url: `https://${id}.test/p`, title, image_url: null, store: `${id}.test`, price_cents: 1000, previous_price_cents: null, bought: false, ...o }) as Item
+  ({ id, url: `https://${id}.test/p`, title, image_url: null, store: `${id}.test`, price_cents: 1000, previous_price_cents: null, bought: false, collection: null, ...o }) as Item
 const A = mk('a', 'Alpha', { price_cents: 1000 }), B = mk('b', 'Beta', { price_cents: 2000 }), C = mk('c', 'Gamma', { bought: true })
 
 const show = (list: Item[]) => {
   vi.mocked(items.listItems).mockResolvedValue(list)
-  render(<Wishlist session={{} as never} />)
+  render(<Wishlist />)
 }
 beforeEach(() => {
   vi.clearAllMocks()
@@ -124,4 +124,12 @@ describe('type filter', () => {
     expect(await screen.findByText('Alpha')).toBeInTheDocument()
     expect(screen.getByText('Dune')).toBeInTheDocument()
   })
+})
+
+it('never lists library items', async () => {
+  show([A, mk('k', 'Dune', { collection: 'book' }), mk('l', 'Akira', { collection: 'manga', bought: true })])
+  await screen.findByText('Alpha')
+  expect(screen.queryByText('Dune')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Bought' }))
+  expect(screen.queryByText('Akira')).toBeNull()
 })

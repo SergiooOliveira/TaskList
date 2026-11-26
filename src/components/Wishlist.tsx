@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Session } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
 import { addItem, applyPriceCheck, deleteItem, listItems, updateItem, type Item } from '../lib/items'
 import ItemRow from './ItemRow'
 import { typeColor } from '../lib/typeColor'
 import ItemForm, { type FormValues } from './ItemForm'
 
-export default function Wishlist({ session: _session }: { session: Session }) {
+export default function Wishlist() {
   const [items, setItems] = useState<Item[] | null>(null)
   const [loadFailed, setLoadFailed] = useState(false)
   const [showBought, setShowBought] = useState(false)
@@ -18,7 +16,7 @@ export default function Wishlist({ session: _session }: { session: Session }) {
 
   const load = useCallback(() => {
     setLoadFailed(false)
-    listItems().then(setItems, () => setLoadFailed(true))
+    listItems().then((xs) => setItems(xs.filter((i) => i.collection === null)), () => setLoadFailed(true))
   }, [])
   useEffect(load, [load])
 
@@ -64,7 +62,7 @@ export default function Wishlist({ session: _session }: { session: Session }) {
           <button aria-pressed={!showBought} onClick={() => setShowBought(false)}>Not bought</button>
           <button aria-pressed={showBought} onClick={() => setShowBought(true)}>Bought</button>
         </div>
-        <button onClick={() => supabase.auth.signOut()}>Sign out</button>
+        <a href="#/">‹ Collections</a>
       </div>
       <div className="add">
         <input type="search" aria-label="Search" placeholder="Search…" value={query} onChange={(e) => setQuery(e.target.value)} />
