@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { formatEuro, listItems, type Item } from '../../lib/items'
 import { listReads, type Read } from '../../lib/reads'
-import { href } from '../../lib/route'
+import { href, type Kind } from '../../lib/route'
 import { beforeApp, readingStats, spendingStats, years, type Pairs, type Year } from '../../lib/stats'
 import { NightshadeArt } from './themes'
 
@@ -83,6 +83,8 @@ function Spending({ items, year }: { items: Item[]; year: Year }) {
   )
 }
 
+const lastKind = (): Kind => { try { return sessionStorage.getItem('libKind') === 'manga' ? 'manga' : 'book' } catch { return 'book' } }
+
 export default function Stats() {
   const [data, setData] = useState<{ items: Item[]; reads: Read[] } | null>(null)
   const [failed, setFailed] = useState(false)
@@ -92,12 +94,12 @@ export default function Stats() {
   }, [])
 
   return (
-    <div className="library theme-nightshade">
+    <div className="library stats theme-nightshade">
       <NightshadeArt />
       <header className="lib-head">
         <div>
-          <a className="back" href={href({ name: 'library', kind: 'book', view: 'shelf' })}>‹ Library</a>
-          <h1>Reading and spending</h1>
+          <a className="back" href={href({ name: 'library', kind: lastKind(), view: 'shelf' })}>‹ Library</a>
+          <h1>Stats</h1>
         </div>
       </header>
       {failed ? <p>Couldn’t load your library.</p> : !data ? <p>…</p> : (

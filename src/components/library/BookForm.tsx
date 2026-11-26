@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { addItem, boughtPatch, deleteItem, updateItem, type Item, type NewItem } from '../../lib/items'
+import { addItem, deleteItem, updateItem, type Item, type NewItem } from '../../lib/items'
 import { searchBooks, type Candidate } from '../../lib/googleBooks'
 import { parsePrice } from '../../lib/price'
 import { normalizeUrl } from '../../lib/url'
@@ -33,7 +33,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
   })
   const [rating, setRating] = useState(initial.rating ?? 0)
   const [own, setOwn] = useState(initial.bought ?? true)
-  const [found, setFound] = useState<Candidate[] | null>(null)
+  const [found, setFound] = useState<Candidate[] | { ok: false } | null>(null)
   const [errs, setErrs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -73,13 +73,13 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
       title: v.title.trim(), author: n(v.author), series: n(v.series), series_number: number ?? null, form: n(v.form),
       genres: genres.length ? genres : null, pages: pages ?? null, language: n(v.language), price_cents: cents ?? null,
       store: n(v.store), image_url: cover, rating: rating || null,
-      ...boughtPatch(own, initial.bought ? initial.bought_on ?? todayISO() : todayISO()),
+      bought: own, bought_on: own ? (initial.bought ? initial.bought_on ?? null : todayISO()) : null, // owned stays as-is (imports have no date)
     }
     run(async () => {
       if (initial.id) {
         await updateItem(initial.id, fields)
         const [s, f] = [n(v.started), n(v.finished)]
-        if (own && latest && (s !== latest.started_on || f !== latest.finished_on)) await updateRead(latest.id, { started_on: s, finished_on: f })
+        if (own && latest && (s !== latest.started_on || f !== latest.finished_on)) await updateRead(latest.id, { started_on: s, finished_on: f, ...(latest.before_app && { before_app: false }) })
       } else await addItem({ ...fields, collection })
     })
   }
@@ -105,7 +105,8 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
         </div>
         {field('title', 'Title')}
         <button type="button" className="ghost" disabled={!v.title.trim()} onClick={find}>Find details</button>
-        {found && (found.length === 0 ? <p>No matches. Fill in the details yourself.</p> : (
+        {found && ('ok' in found ? <p>Couldn't reach Google Books. Fill in the details yourself.</p>
+          : found.length === 0 ? <p>No matches. Fill in the details yourself.</p> : (
           <ul className="candidates" aria-label="Matches">
             {found.map((c, i) => (
               <li key={i}><button type="button" onClick={() => pick(c)}>

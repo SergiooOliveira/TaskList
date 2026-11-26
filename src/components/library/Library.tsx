@@ -21,6 +21,8 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
   const [editing, setEditing] = useState<Partial<Item> | null>(null) // BookForm initial values
   const [panel, setPanel] = useState<{ kind: 'series' | 'manga' | 'volumes'; name: string } | null>(null)
 
+  useEffect(() => { try { sessionStorage.setItem('libKind', kind) } catch { /* private mode */ } }, [kind])
+
   const load = useCallback(() => {
     setFailed(false)
     Promise.all([listItems(), listReads()]).then(([items, reads]) => setData({ items, reads }), () => setFailed(true))

@@ -16,7 +16,7 @@ export default function Wishlist() {
 
   const load = useCallback(() => {
     setLoadFailed(false)
-    listItems().then((xs) => setItems(xs.filter((i) => i.collection === null)), () => setLoadFailed(true))
+    listItems().then((xs) => setItems(xs.filter((i) => !i.collection)), () => setLoadFailed(true))
   }, [])
   useEffect(load, [load])
 

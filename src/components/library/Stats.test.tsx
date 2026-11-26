@@ -43,3 +43,11 @@ it('year picker re-renders totals; All time shows Before the app', async () => {
   fireEvent.change(screen.getByLabelText('Year'), { target: { value: '2024' } })
   expect(screen.getByText('Nothing bought in 2024 yet.')).toBeTruthy()
 })
+
+it('back link returns to the library kind the user came from', async () => {
+  sessionStorage.setItem('libKind', 'manga')
+  render(<Stats />)
+  expect(screen.getByRole('link', { name: '‹ Library' })).toHaveAttribute('href', '#/library/manga/shelf')
+  await screen.findByLabelText('Year')
+  sessionStorage.clear()
+})

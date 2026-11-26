@@ -22,12 +22,15 @@ beforeEach(() => {
 })
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
-test('no results keeps the form editable', async () => {
-  vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'))
+test('lookup failure and empty result read differently and keep the form editable', async () => {
+  const f = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({}) } as Response)
   setup()
   type('Title', 'Zzz')
   fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
   expect(await screen.findByText('No matches. Fill in the details yourself.')).toBeInTheDocument()
+  f.mockRejectedValue(new Error('offline'))
+  fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
+  expect(await screen.findByText("Couldn't reach Google Books. Fill in the details yourself.")).toBeInTheDocument()
   type('Pages', '12')
   expect(screen.getByLabelText('Pages')).toHaveValue('12')
 })
@@ -131,4 +134,26 @@ test('edits the latest read even when reads come out of order', () => {
   cleanup()
   setup({ initial: owned, reads: [rr('done', { started_on: '2025-01-01', finished_on: '2026-09-01' }), rr('open', { started_on: '2024-01-01' })] })
   expect(screen.getByLabelText('Started on')).toHaveValue('2024-01-01')
+})
+
+test('editing an imported book (bought_on null) keeps bought_on null', async () => {
+  const initial = { id: 'b1', title: 'Old', bought: true, bought_on: null, collection: 'book' as const }
+  vi.mocked(items.updateItem).mockImplementation(async (id, p) => ({ ...initial, ...p, id }) as items.Item)
+  const { onSaved } = setup({ initial })
+  type('Title', 'New')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(onSaved).toHaveBeenCalled())
+  expect(items.updateItem).toHaveBeenCalledWith('b1', expect.objectContaining({ bought: true, bought_on: null }))
+})
+
+test('dating a before-the-app read makes it a dated read', async () => {
+  const read = rr('pre', { before_app: true })
+  vi.mocked(items.updateItem).mockImplementation(async (id, p) => ({ ...owned, ...p, id }) as items.Item)
+  vi.mocked(reads.updateRead).mockResolvedValue(read)
+  const { onSaved } = setup({ initial: owned, reads: [read] })
+  type('Started on', '2026-02-01')
+  type('Finished on', '2026-03-01')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(onSaved).toHaveBeenCalled())
+  expect(reads.updateRead).toHaveBeenCalledWith('pre', { started_on: '2026-02-01', finished_on: '2026-03-01', before_app: false })
 })

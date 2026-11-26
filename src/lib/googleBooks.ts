@@ -20,14 +20,14 @@ export function toCandidate(volume: unknown): Candidate {
   }
 }
 
-export async function searchBooks(q: string): Promise<Candidate[]> {
+export async function searchBooks(q: string): Promise<Candidate[] | { ok: false }> {
   try {
     const query = isIsbn(q) ? `isbn:${q.replace(/[\s-]/g, '')}` : `intitle:${q.trim()}`
     const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`)
-    if (!res.ok) return []
+    if (!res.ok) return { ok: false }
     const body = await res.json() as { items?: unknown[] }
     return (body.items ?? []).map(toCandidate)
   } catch {
-    return []
+    return { ok: false }
   }
 }
