@@ -22,7 +22,14 @@ export function parseCsv(text) {
   return rows
 }
 
-const iso = (d) => { const m = /^(\d\d)\/(\d\d)\/(\d{4})$/.exec((d ?? '').trim()); return m ? `${m[3]}-${m[1]}-${m[2]}` : null }
+const iso = (d) => {
+  const m = /^(\d\d)\/(\d\d)\/(\d{4})$/.exec((d ?? '').trim())
+  if (!m) return null
+  const [mo, da, y] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const t = new Date(Date.UTC(y, mo - 1, da))
+  return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === da ? `${m[3]}-${m[1]}-${m[2]}` : null
+}
+const finite = (n) => (Number.isFinite(n) ? n : null)
 const orNull = (s) => (s && s.trim() ? s.trim() : null)
 
 export function mapRow(r, coverBase) {
@@ -47,25 +54,27 @@ export function mapRow(r, coverBase) {
     series: hasSeries ? series : null,
     series_number: hasSeries && num > 0 ? num : null,
     genres: genres.length ? genres : null,
-    pages: r.Pages?.trim() ? Number(r.Pages) : null,
+    pages: /^\d+$/.test((r.Pages ?? '').trim()) ? Number(r.Pages.trim()) : null,
     language: orNull(r.Language),
     rating: stars >= 1 && stars <= 5 ? stars : null,
     store,
-    price_cents: store === 'Gift' ? 0 : price ? Math.round(Number(price) * 100) : null,
+    price_cents: store === 'Gift' ? 0 : price ? finite(Math.round(Number(price) * 100)) : null,
     bought: status !== 'Wishlist',
     bought_on: null,
     image_url: cover && coverBase ? coverBase + cover : null,
   }
   let read = null
+  const started = iso(r['Date Start'])
+  if (r['Date Start']?.trim() && !started) console.error(`warning: invalid Date Start "${r['Date Start']}" for "${title}"`)
   if (status === 'Finished') read = { item_id: item.id, started_on: null, finished_on: null, before_app: true }
-  else if (status === 'Currently Reading') read = { item_id: item.id, started_on: iso(r['Date Start']), finished_on: null, before_app: false }
+  else if (status === 'Currently Reading') read = { item_id: item.id, started_on: started, finished_on: null, before_app: false }
   return { item, read }
 }
 
 const lit = (v) =>
   v === null || v === undefined ? 'NULL'
   : Array.isArray(v) ? `ARRAY[${v.map(lit).join(',')}]::text[]`
-  : typeof v === 'number' ? String(v)
+  : typeof v === 'number' ? (Number.isFinite(v) ? String(v) : 'NULL')
   : typeof v === 'boolean' ? String(v)
   : `'${String(v).replace(/'/g, "''")}'`
 

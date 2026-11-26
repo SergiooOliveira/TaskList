@@ -52,6 +52,25 @@ describe('mapRow', () => {
   })
 })
 
+describe('bad input', () => {
+  it('nulls non-numeric pages and price', () => {
+    const m = mapRow(row({ Pages: 'abc', Price: '1.2.3' }), null)!
+    expect(m.item.pages).toBeNull()
+    expect(m.item.price_cents).toBeNull()
+    expect(mapRow(row({ Pages: '1x' }), null)!.item.pages).toBeNull()
+    expect(toSql([m])).not.toMatch(/NaN|Infinity/)
+  })
+  it('validates dates', () => {
+    const d = (s: string) => mapRow(row({ Status: 'Currently Reading', 'Date Start': s }), null)!.read!.started_on
+    const warn = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(d('13/45/2026')).toBeNull()
+    expect(d('02/30/2026')).toBeNull()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Test Book'))
+    expect(d('06/09/2026')).toBe('2026-06-09')
+    warn.mockRestore()
+  })
+})
+
 describe('toSql', () => {
   it('wraps in a transaction and escapes quotes', () => {
     const rows = [mapRow(row({ 'Book Title': "It's here", Status: 'Finished', Genre: 'A, B' }), null), mapRow(row({}), null)]
