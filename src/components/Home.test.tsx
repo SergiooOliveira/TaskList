@@ -22,3 +22,19 @@ it('shows counts as links and signs out', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
   expect(supabase.auth.signOut).toHaveBeenCalled()
 })
+
+it('shows … while loading, not zeros', () => {
+  vi.mocked(items.listItems).mockReturnValue(new Promise(() => {}))
+  render(<Home />)
+  expect(screen.getAllByText('…')).toHaveLength(2)
+  expect(screen.queryByText(/0 wanted/)).toBeNull()
+})
+
+it('shows an error with retry when loading fails', async () => {
+  vi.mocked(items.listItems).mockRejectedValueOnce(new Error('x')).mockResolvedValue([])
+  render(<Home />)
+  expect(await screen.findByText("Couldn't load your collections.")).toBeInTheDocument()
+  expect(screen.queryByText(/wanted/)).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+  expect(await screen.findByText('0 wanted')).toBeInTheDocument()
+})
