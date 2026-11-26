@@ -1,6 +1,6 @@
 # Library (Books & Manga): design
 
-Status: draft for approval. It builds on `2026-11-25-collections-roadmap.md` and replaces that file's "Books" section.
+Status: **approved 2026-11-26**, including the screens in `library-mockups/` (open the `.html` files in a browser; the canvas copies are the reference). It builds on `2026-11-25-collections-roadmap.md` and replaces that file's "Books" section.
 
 ## Why
 
@@ -13,8 +13,16 @@ You track your books in Notion ("Dark Academia Library"). It works, but it isn't
 1. **Home screen.** After login you see your collections: **Wishlist** and **Library**. Tap one to open it.
 2. **Library** with two tabs: **Books** and **Manga**.
    - Inside each tab, filter by **form** (Prose, Poetry, …). Forms are free text, picked or created with the existing searchable picker, so there are no duplicates.
-   - **Books** lists your owned books: cover, title, author, series and number, reading state, and rating.
-   - **Manga** groups volumes **by series**: one row per series, with a volume bar of owned vs. known volumes (known = owned + wanted). Tap the row to open the volumes.
+   - **Shelf | Wishlist switch** sits under the tabs, on the same row as the form chips, in the same place on every screen. Each side shows a count ("Shelf · 12", "Wishlist · 2").
+   - **Books · Shelf** (`library-mockups/Books.html`) has three sections:
+     - **Reading now:** books with an open read, each with a **Finished** button. They're always on top, even when they're part of a series.
+     - **Series:** any series with **2 or more books** (owned or wanted) is one row: stacked covers, the name, a line like "4 books · all read" or "1 on shelf · 2 wanted", and one short bar per book (filled = read, outlined = wanted). Tapping it opens the **series panel**.
+     - **Single books:** standalones and lone books of a series. Each shows its state: **Start** when not started, or the rating when read.
+   - **Series panel** (`library-mockups/BooksSeries.html`) is a bottom sheet listing the series' books in number order (I, II, III…). Owned books show their reading action. Wanted books are dimmed, with price, store and a **Bought** checkbox. The footer shows "N of M owned · pages in total" and **+ Add a book**, which opens the add modal with the series filled in.
+   - **Books · Wishlist** (`library-mockups/BooksWish.html`) lists wanted books with price, store and a **Bought** checkbox. Ticking it moves the book to the Shelf.
+   - **Manga · Shelf** (`library-mockups/Manga.html`) has one row per series with a volume bar of owned vs. known volumes (known = owned + wanted), e.g. "13 / 23 volumes · 10 on your wishlist".
+   - **Manga · Wishlist** (`library-mockups/MangaWish.html`) has one compact card per series: wanted count, volume range, total price and **Choose volumes you bought ›**. It stays the same size for 3 or 40 volumes.
+   - **Volume panel** (`library-mockups/MangaWishSheet.html`) is a bottom sheet listing the wanted volumes: number, title, price and a checkbox, plus **Select all**. The list scrolls inside the panel. The button names the result, e.g. **Move 2 to shelf · €20.00**. ✕, or tapping outside, closes it without changes.
 3. **Wishlist and Library are the same list (Approach B).**
    - An entry can belong to a **collection screen**: Book or Manga now, Vinyl and Game in later rounds. Entries without one are general wishlist items.
    - **The main Wishlist shows only general items.** Your own **types** stay exactly as today: free text, created with the picker, coloured, and used as filter chips. Collection items never appear there.

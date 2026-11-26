@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Library · Manga · Shelf</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&amp;family=Cinzel:wght@500;600&amp;family=Inter:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#E0604A}a:hover{color:#F07C66}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #0A0809; color: #EDE6DC; font-family: Inter, system-ui, sans-serif; font-size: 14px;">
+  <svg aria-hidden="true" width="0" height="0" style="position: absolute">
+    <defs>
+      <symbol id="lily" viewBox="-40 -40 80 80">
+        <g fill="none" stroke="#CDAA63" stroke-width=".7" stroke-linecap="round">
+          <path d="M0 0C-6-14-22-22-30-36M0 0C6-14 22-22 30-36M0 0C-12-8-30-8-38-18M0 0C12-8 30-8 38-18M0 0C-2-16-4-28-2-40M0 0C2-16 6-28 8-40"/>
+        </g>
+        <g fill="#B5321F" stroke="#E0604A" stroke-width=".8">
+          <path d="M0 0C-8-4-16-2-20 4C-22 8-18 10-16 6C-14 2-8 0 0 0Z"/>
+          <path d="M0 0C8-4 16-2 20 4C22 8 18 10 16 6C14 2 8 0 0 0Z"/>
+          <path d="M0 0C-4-8-4-16 2-20C6-22 8-18 4-16C0-14-2-8 0 0Z"/>
+          <path d="M0 0C-6 4-14 10-14 16C-14 20-10 19-10 15C-10 10-5 5 0 0Z"/>
+          <path d="M0 0C6 4 14 10 14 16C14 20 10 19 10 15C10 10 5 5 0 0Z"/>
+          <path d="M0 0C4-8 10-14 16-14C20-14 19-10 15-10C10-10 5-5 0 0Z"/>
+        </g>
+        <g fill="#CDAA63"><circle cx="-30" cy="-36" r="1.4"/><circle cx="30" cy="-36" r="1.4"/><circle cx="-38" cy="-18" r="1.4"/><circle cx="38" cy="-18" r="1.4"/><circle cx="-2" cy="-40" r="1.4"/><circle cx="8" cy="-40" r="1.4"/></g>
+      </symbol>
+    </defs>
+  </svg>
+  <svg aria-hidden="true" width="390" height="844" style="position: absolute; inset: 0;">
+    <circle cx="300" cy="120" r="92" fill="#B5321F" opacity=".16"/>
+    <circle cx="300" cy="120" r="92" fill="none" stroke="#E0604A" stroke-width=".8" opacity=".35"/>
+    <g fill="none" stroke="#EDE6DC" stroke-width=".8" opacity=".09">
+      <path d="M-10 240C60 224 120 252 200 236S330 214 400 232"/>
+      <path d="M-10 252C70 238 130 264 210 248S340 228 400 246"/>
+    </g>
+    <g stroke="#7A2418" stroke-width="1.4"><path d="M40 844V722M78 844V690M112 844V744"/></g>
+    <use href="#lily" x="2" y="664" width="84" height="84"/>
+    <use href="#lily" x="44" y="632" width="76" height="76"/>
+    <use href="#lily" x="82" y="704" width="62" height="62" opacity=".85"/>
+  </svg>
+  <div aria-hidden="true" style="position: absolute; right: 10px; top: 470px; writing-mode: vertical-rl; font-family: 'Shippori Mincho B1', serif; font-size: 13px; letter-spacing: .5em; color: #E0604A; opacity: .55;">漫画の書庫</div>
+
+  <div style="position: relative; display: flex; flex-direction: column; gap: 16px; padding: 64px 20px 28px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+      <div>
+        <a href="#" style="font-size: 12px; letter-spacing: .08em; text-decoration: none;">‹ Collections</a>
+        <h1 style="margin: 2px 0 0; font-family: 'Shippori Mincho B1', serif; font-weight: 800; font-size: 40px; line-height: 46px; height: 46px; color: #EDE6DC;">Library</h1>
+      </div>
+      <button aria-label="Add a manga" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #E0604A; background: transparent; color: #E0604A; font-size: 22px; line-height: 1;">+</button>
+    </div>
+
+    <p style="margin: 0; font-family: 'Shippori Mincho B1', serif; font-size: 16px; line-height: 24px; height: 24px; white-space: nowrap; color: #A99E93;"><span style="color: #F07C66; font-weight: 700;">21 volumes</span> from <span style="color: #F07C66; font-weight: 700;">3 series</span> on your shelf.</p>
+
+    <div role="tablist" aria-label="Kind" style="display: flex; justify-content: center; gap: 32px;">
+      <a href="Books.dc.html" role="tab" aria-selected="false" style="padding: 8px 4px; color: #A99E93; font-family: Cinzel, Georgia, serif; font-size: 15px; letter-spacing: .16em; text-decoration: none;">BOOKS</a>
+      <a href="Manga.dc.html" role="tab" aria-selected="true" style="padding: 8px 4px; border-bottom: 1px solid #E0604A; color: #F07C66; font-family: Cinzel, Georgia, serif; font-size: 15px; letter-spacing: .16em; text-decoration: none;">MANGA</a>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+      <div role="group" aria-label="Show" style="display: flex; padding: 3px; border: 1px solid #3A2A26; border-radius: 999px;">
+        <a href="Manga.dc.html" aria-current="page" style="padding: 6px 14px; border-radius: 999px; background: #E0604A; color: #0A0809; font-size: 13px; font-weight: 500; text-decoration: none;">Shelf · 21</a>
+        <a href="MangaWish.dc.html" style="padding: 6px 14px; border-radius: 999px; color: #A99E93; font-size: 13px; text-decoration: none;">Wishlist · 10</a>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button style="padding: 5px 12px; border: 1px solid #E0604A; background: rgba(224,96,74,.12); color: #F07C66; font-family: 'Shippori Mincho B1', serif; font-size: 13px;">All</button>
+        <button style="padding: 5px 12px; border: 1px solid #3A2A26; background: none; color: #A99E93; font-family: 'Shippori Mincho B1', serif; font-size: 13px;">Shōnen</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: grid; grid-template-columns: 52px 1fr; gap: 14px; padding: 12px; background: rgba(20,14,14,.82); border-left: 2px solid #E0604A;">
+        <div style="width: 52px; height: 76px; background: linear-gradient(160deg,#2A1210,#0D0707); box-shadow: 0 0 0 1px #3A2A26;"></div>
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-family: 'Shippori Mincho B1', serif; font-size: 18px; font-weight: 700; line-height: 1.15;">Demon Slayer</div>
+          <div style="color: #A99E93; font-size: 12px;">Koyoharu Gotouge · all 13 read</div>
+          <div style="display: flex; gap: 2px; margin-top: 4px;" aria-label="13 owned of 23 known volumes">
+            <span style="flex: 13; height: 4px; background: #E0604A;"></span><span style="flex: 10; height: 4px; background: #2A201D;"></span>
+          </div>
+          <div style="color: #A99E93; font-size: 11px;">13 / 23 volumes · 10 on your wishlist</div>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 52px 1fr; gap: 14px; padding: 12px; background: rgba(20,14,14,.82); border-left: 2px solid #3A2A26;">
+        <div style="width: 52px; height: 76px; background: linear-gradient(160deg,#1E1A22,#0A090C); box-shadow: 0 0 0 1px #3A2A26;"></div>
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-family: 'Shippori Mincho B1', serif; font-size: 18px; font-weight: 700; line-height: 1.15;">Death Note · Black Edition</div>
+          <div style="color: #A99E93; font-size: 12px;">Tsugumi Ohba · all 6 read</div>
+          <div style="display: flex; gap: 2px; margin-top: 4px;" aria-label="6 of 6 volumes owned"><span style="flex: 1; height: 4px; background: #E0604A;"></span></div>
+          <div style="color: #A99E93; font-size: 11px;">6 / 6 volumes · complete</div>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 52px 1fr; gap: 14px; padding: 12px; background: rgba(20,14,14,.82); border-left: 2px solid #3A2A26;">
+        <div style="width: 52px; height: 76px; background: linear-gradient(160deg,#151F2A,#08090C); box-shadow: 0 0 0 1px #3A2A26;"></div>
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-family: 'Shippori Mincho B1', serif; font-size: 18px; font-weight: 700; line-height: 1.15;">One Piece</div>
+          <div style="color: #A99E93; font-size: 12px;">Eiichiro Oda · vols. 1, 3</div>
+          <div style="display: flex; gap: 2px; margin-top: 4px;" aria-label="2 volumes owned"><span style="flex: 1; height: 4px; background: #E0604A;"></span></div>
+          <div style="color: #A99E93; font-size: 11px;">2 volumes · both read</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
