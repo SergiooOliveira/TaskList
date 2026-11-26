@@ -10,6 +10,10 @@ const LINK_ERR = 'Use a http or https link'
 const text = (v: unknown) => (v == null ? '' : String(v))
 const intOrNull = (s: string) => (s.trim() === '' ? null : /^\d+$/.test(s.trim()) ? Number(s) : undefined)
 
+// The open read, else the one with the latest date; before-the-app reads (no dates) come last. listReads has no order.
+const latestRead = (rs: Read[]) => [...rs].sort((a, b) => Number(!b.finished_on && !b.before_app) - Number(!a.finished_on && !a.before_app)
+  || (b.finished_on ?? b.started_on ?? '').localeCompare(a.finished_on ?? a.started_on ?? ''))[0] ?? null
+
 type Props = {
   initial: Partial<Item>
   collection: 'book' | 'manga'
@@ -20,7 +24,7 @@ type Props = {
 }
 
 export default function BookForm({ initial, collection, forms, reads = [], onSaved, onCancel }: Props) {
-  const latest = reads.length ? reads[reads.length - 1] : null
+  const latest = latestRead(reads)
   const [v, setV] = useState({
     title: text(initial.title), author: text(initial.author), series: text(initial.series), number: text(initial.series_number),
     form: text(initial.form), genres: (initial.genres ?? []).join(', '), pages: text(initial.pages), language: text(initial.language),
@@ -57,6 +61,10 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
     if (number === undefined) e2.number = 'Use a whole number'
     const cover = v.cover.trim() ? normalizeUrl(v.cover) : null
     if (v.cover.trim() && !cover) e2.cover = LINK_ERR
+    if (initial.id && own && latest) {
+      if (v.finished && !v.started) e2.started = 'Add a start date first'
+      else if (v.finished && v.started > v.finished) e2.finished = "Finish can't be before start"
+    }
     setErrs(e2)
     if (Object.keys(e2).length) return
     const genres = v.genres.split(',').map((g) => g.trim()).filter(Boolean)

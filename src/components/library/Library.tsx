@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { boughtPatch, formatEuro, listItems, updateItem, type Item } from '../../lib/items'
 import { listReads, readState, todayISO, type Read } from '../../lib/reads'
-import { forms, groupBooks, groupManga } from '../../lib/library'
+import { forms, groupBooks, groupManga, type SeriesGroup } from '../../lib/library'
 import { href, type Kind } from '../../lib/route'
 import BookForm from './BookForm'
 import SeriesPanel from './SeriesPanel'
@@ -19,7 +19,7 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
   const [error, setError] = useState('')
   const [form, setForm] = useState<string | null>(null)
   const [editing, setEditing] = useState<Partial<Item> | null>(null) // BookForm initial values
-  const [panel, setPanel] = useState<{ kind: 'series' | 'volumes'; name: string } | null>(null)
+  const [panel, setPanel] = useState<{ kind: 'series' | 'manga' | 'volumes'; name: string } | null>(null)
 
   const load = useCallback(() => {
     setFailed(false)
@@ -100,13 +100,14 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
             {shown.filter((i) => !i.bought).map((i) => <WantedBookRow key={i.id} item={i} onBought={buy} onEdit={setEditing} />)}
             <p className="foot">{wanted.length ? 'Tick Bought and the book moves to your shelf.' : 'Nothing wanted yet.'}</p>
           </>}
-          {kind === 'manga' && <MangaList series={groupManga(shown, reads)} view={view} onChoose={(name) => setPanel({ kind: 'volumes', name })} />}
+          {kind === 'manga' && <MangaList series={groupManga(shown, reads)} view={view} onChoose={(name) => setPanel({ kind: 'volumes', name })} onOpen={(name) => setPanel({ kind: 'manga', name })} />}
         </div>
       )}
-      {data && panel?.kind === 'series' && (() => {
-        const group = groupBooks(mine, reads).series.find((s) => s.name === panel.name)
+      {data && (panel?.kind === 'series' || panel?.kind === 'manga') && (() => {
+        const group = panel.kind === 'series' ? groupBooks(mine, reads).series.find((s) => s.name === panel.name)
+          : toGroup(groupManga(mine, reads).find((s) => s.name === panel.name))
         return group && <SeriesPanel group={group} reads={reads} onClose={() => setPanel(null)} onChange={saveRead}
-          onBought={(u) => saveItems([u])} onError={fail} onAddToSeries={(name, author) => setEditing({
+          onBought={(u) => saveItems([u])} onError={fail} onEdit={setEditing} onAddToSeries={(name, author) => setEditing({
             series: name, author, bought: false,
             series_number: Math.max(0, ...mine.filter((i) => i.series === name).map((i) => i.series_number ?? 0)) + 1,
           })} />
@@ -121,6 +122,12 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
   )
 }
 
+// Shows a manga series in the book-series panel; owned and wanted volumes in number order.
+const toGroup = (s?: ReturnType<typeof groupManga>[number]): SeriesGroup | undefined => s && {
+  name: s.name, author: s.author, owned: s.owned.length, wanted: s.wanted.length, read: s.read,
+  books: [...s.owned, ...s.wanted].sort((a, b) => (a.series_number ?? Infinity) - (b.series_number ?? Infinity)),
+}
+
 function BookShelf({ items, reads, onEdit, onChange, onError, onOpen }: { items: Item[]; reads: Read[]; onEdit: (i: Item) => void; onChange: (r: Read) => void; onError: (e: unknown) => void; onOpen: (name: string) => void }) {
   const g = groupBooks(items, reads)
   const row = (i: Item) => <BookRow key={i.id} item={i} reads={reads.filter((r) => r.item_id === i.id)} onEdit={onEdit} onChange={onChange} onError={onError} />
@@ -132,11 +139,11 @@ function BookShelf({ items, reads, onEdit, onChange, onError, onOpen }: { items:
   </>
 }
 
-function MangaList({ series, view, onChoose }: { series: ReturnType<typeof groupManga>; view: View; onChoose: (name: string) => void }) {
+function MangaList({ series, view, onChoose, onOpen }: { series: ReturnType<typeof groupManga>; view: View; onChoose: (name: string) => void; onOpen: (name: string) => void }) {
   const shelf = view === 'shelf'
   const list = series.filter((s) => (shelf ? s.owned : s.wanted).length > 0)
   return <>
-    {list.map((s) => (shelf ? <MangaShelfRow key={s.name} s={s} /> : <MangaWishCard key={s.name} s={s} onChoose={() => onChoose(s.name)} />))}
+    {list.map((s) => (shelf ? <MangaShelfRow key={s.name} s={s} onOpen={() => onOpen(s.name)} /> : <MangaWishCard key={s.name} s={s} onChoose={() => onChoose(s.name)} />))}
     <p className="foot">{list.length === 0 ? (shelf ? 'Nothing on your shelf yet.' : 'Nothing wanted yet.') : shelf ? '' : 'Bought volumes move to your shelf.'}</p>
   </>
 }

@@ -156,3 +156,17 @@ it('the edit button on a book opens the form filled in', async () => {
   fireEvent.click(await screen.findByRole('button', { name: 'Edit A templária' }))
   expect(screen.getByLabelText('Title')).toHaveValue('A templária')
 })
+
+it('Edit inside a series panel opens the form for that book', async () => {
+  render(<Library kind="book" view="shelf" />)
+  fireEvent.click(await screen.findByRole('button', { name: /The Legendborn Cycle/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'Edit Marca de Sangue' }))
+  expect(screen.getByLabelText('Title')).toHaveValue('Marca de Sangue')
+})
+
+it('tapping a manga shelf row opens its volumes with Edit buttons', async () => {
+  render(<Library kind="manga" view="shelf" />)
+  fireEvent.click(await screen.findByRole('button', { name: /Demon Slayer/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'Edit Demon Slayer 2' }))
+  expect(screen.getByLabelText('Title')).toHaveValue('Demon Slayer 2')
+})

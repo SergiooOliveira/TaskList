@@ -104,3 +104,31 @@ test('delete confirms in the dialog', async () => {
   await waitFor(() => expect(items.deleteItem).toHaveBeenCalledWith('b1'))
   await waitFor(() => expect(onSaved).toHaveBeenCalled())
 })
+
+const owned = { id: 'b1', title: 'Old', bought: true, bought_on: '2026-01-01', collection: 'book' as const }
+const rr = (id: string, o: Partial<reads.Read>): reads.Read => ({ id, item_id: 'b1', started_on: null, finished_on: null, before_app: false, ...o })
+
+test('finish before start and finish without start are rejected', () => {
+  setup({ initial: owned, reads: [rr('r1', { started_on: '2026-02-01' })] })
+  type('Finished on', '2026-01-15')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(screen.getByText("Finish can't be before start")).toBeInTheDocument()
+  type('Started on', '')
+  type('Finished on', '2026-03-01')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(screen.getByText('Add a start date first')).toBeInTheDocument()
+  expect(reads.updateRead).not.toHaveBeenCalled()
+  expect(items.updateItem).not.toHaveBeenCalled()
+})
+
+test('edits the latest read even when reads come out of order', () => {
+  setup({ initial: owned, reads: [
+    rr('old', { started_on: '2025-01-01', finished_on: '2025-02-01' }),
+    rr('pre', { before_app: true }),
+    rr('new', { started_on: '2026-03-01', finished_on: '2026-04-01' }),
+  ] })
+  expect(screen.getByLabelText('Started on')).toHaveValue('2026-03-01')
+  cleanup()
+  setup({ initial: owned, reads: [rr('done', { started_on: '2025-01-01', finished_on: '2026-09-01' }), rr('open', { started_on: '2024-01-01' })] })
+  expect(screen.getByLabelText('Started on')).toHaveValue('2024-01-01')
+})

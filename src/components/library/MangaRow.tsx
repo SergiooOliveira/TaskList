@@ -4,11 +4,11 @@ import { Cover } from './BookRow'
 
 export const sumCents = (xs: { price_cents: number | null }[]) => xs.reduce((s, i) => s + (i.price_cents ?? 0), 0)
 
-export function MangaShelfRow({ s }: { s: MangaSeries }) {
+export function MangaShelfRow({ s, onOpen }: { s: MangaSeries; onOpen: () => void }) {
   const n = s.owned.length, known = n + s.wanted.length
   const read = s.read === n ? `all ${n} read` : s.read === 0 ? 'not started' : `${s.read} of ${n} read`
   return (
-    <div className={`manga${s.wanted.length ? ' hot' : ''}`}>
+    <button type="button" className={`manga open${s.wanted.length ? ' hot' : ''}`} onClick={onOpen}>
       <Cover item={s.owned[0]} />
       <div className="body">
         <div className="title">{s.name}</div>
@@ -18,7 +18,7 @@ export function MangaShelfRow({ s }: { s: MangaSeries }) {
         </div>
         <div className="small">{s.wanted.length ? `${n} / ${known} volumes · ${s.wanted.length} on your wishlist` : `${n} volume${n === 1 ? '' : 's'}`}</div>
       </div>
-    </div>
+    </button>
   )
 }
 
