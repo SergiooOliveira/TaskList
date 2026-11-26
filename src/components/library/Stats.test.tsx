@@ -24,6 +24,14 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 
+it('month chart exposes month names and counts as text', async () => {
+  render(<Stats />)
+  fireEvent.change(await screen.findByLabelText('Year'), { target: { value: '2026' } })
+  const list = screen.getByRole('list', { name: 'Books finished per month' })
+  expect(list.textContent).toContain('February: 1')
+  expect(list.textContent).toContain('November: 0')
+})
+
 it('year picker re-renders totals; All time shows Before the app', async () => {
   render(<Stats />)
   await screen.findByRole('region', { name: 'Reading' })

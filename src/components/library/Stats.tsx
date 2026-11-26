@@ -6,7 +6,7 @@ import { beforeApp, readingStats, spendingStats, years, type Pairs, type Year } 
 import { NightshadeArt } from './themes'
 
 const num = new Intl.NumberFormat('pt-PT')
-const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+const MONTHS = Array.from({ length: 12 }, (_, m) => new Date(2000, m, 1).toLocaleString('en', { month: 'long' }))
 
 const Big = ({ n, label }: { n: string; label: string }) => (
   <div className="stat-big"><b>{n}</b><span>{label}</span></div>
@@ -38,11 +38,14 @@ function Reading({ items, reads, year }: { items: Item[]; reads: Read[]; year: Y
         <>
           <div className="stat-row"><Big n={num.format(s.books)} label="books" /><Big n={num.format(s.pages)} label="pages" />
             {s.avgRating !== null && <Big n={String(s.avgRating)} label="average rating" />}</div>
-          <div className="stat-months" role="img" aria-label="Books finished per month">
+          <ol className="stat-months" aria-label="Books finished per month">
             {s.perMonth.map((n, m) => (
-              <div key={m}><b>{n || ''}</b><i style={{ height: `${(n / max) * 100}%` }} /><span>{MONTHS[m]}</span></div>
+              <li key={m}>
+                <span className="sr-only">{MONTHS[m]}: {n}</span>
+                <b aria-hidden="true">{n}</b><i aria-hidden="true" style={{ height: `${(n / max) * 100}%` }} /><span aria-hidden="true">{MONTHS[m][0]}</span>
+              </li>
             ))}
-          </div>
+          </ol>
           <div className="stat-covers">
             {s.finished.filter((i) => i.image_url).map((i, k) => <img key={k} src={i.image_url!} alt={i.title} />)}
           </div>
