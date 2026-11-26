@@ -26,3 +26,9 @@ npm test
 2. Settings > Pages > Source: "GitHub Actions".
 3. Settings > Secrets and variables > Actions > Variables: add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (both are public by design).
 4. Push to `main`; the workflow tests, builds and deploys. Then open the URL on your phone and choose Add to Home Screen.
+
+**Notion import (one time)**
+1. Optional, for covers: create a public Storage bucket `covers` and upload the images from the Notion export zip.
+2. Run `supabase/migrations/0003_library.sql` in the SQL editor if you have not yet.
+3. Generate the SQL: `node scripts/notion-import.mjs path/to/Library_all.csv [https://<project>.supabase.co/storage/v1/object/public/covers/] > import.sql` (the URL argument is only for covers).
+4. Paste `import.sql` into the SQL editor and run it once. Do not commit the CSV or `import.sql`.
