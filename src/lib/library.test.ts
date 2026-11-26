@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
 import { groupBooks, groupManga, forms } from './library'
 import type { Item } from './items'
 import type { Read } from './reads'
+
+vi.mock('./supabase', () => ({ supabase: {} }))
 
 let n = 0
 const item = (p: Partial<Item>): Item => ({
