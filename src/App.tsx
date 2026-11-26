@@ -6,6 +6,7 @@ import Wishlist from './components/Wishlist'
 import Home from './components/Home'
 import { useRoute } from './lib/route'
 import Background from './components/Background'
+import Stats from './components/library/Stats'
 import Library from './components/library/Library'
 
 export default function App() {
@@ -25,10 +26,8 @@ export default function App() {
 
   return (
     <div className="mock">
-      {!(session && route.name === 'library') && <Background />}
-      {ready && (!session ? <Login /> : route.name === 'wishlist' ? <Wishlist /> : route.name === 'home' ? <Home /> : route.name === 'library' ? <Library kind={route.kind} view={route.view} /> : (
-        <><a href="#/">‹ Collections</a><p>Library coming soon</p></>
-      ))}
+      {!(session && (route.name === 'library' || route.name === 'stats')) && <Background />}
+      {ready && (!session ? <Login /> : route.name === 'wishlist' ? <Wishlist /> : route.name === 'home' ? <Home /> : route.name === 'library' ? <Library kind={route.kind} view={route.view} /> : <Stats />)}
     </div>
   )
 }
