@@ -108,3 +108,100 @@ button.link { background: none; color: var(--muted); padding: 4px; text-decorati
 a { color: var(--accent); }
 .top > a:last-child { color: var(--muted); text-decoration: none; font-size: .8rem; padding: 7px 14px; }
 .card .name { color: var(--fg); }
+
+/* ---------- Library: themes set tokens; layout below is shared so nothing moves between Books and Manga ---------- */
+.theme-nightshade {
+  --bg:#08070A; --fg:#E9E1D3; --muted:#A79C88; --accent:#CDAA63; --line:#3A3224; --rule:#221D16; --hl:#CDAA63; --chip-on:#E6C788;
+  --title-font: UnifrakturMaguntia, "Cormorant Garamond", Georgia, serif; --title-size: 46px; --title-weight: 400;
+  --serif: "Cormorant Garamond", Georgia, serif; --lede-size: 18px; --lede-style: italic; --chip-size: 15px; --name-size: 19px; --name-weight: 600;
+  --tab-font: Cinzel, Georgia, serif;
+}
+.theme-higanbana {
+  --bg:#0A0809; --fg:#EDE6DC; --muted:#A99E93; --accent:#E0604A; --line:#3A2A26; --rule:#2A201D; --hl:#F07C66; --chip-on:#F07C66;
+  --title-font: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif; --title-size: 40px; --title-weight: 800;
+  --serif: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif; --lede-size: 16px; --lede-style: normal; --chip-size: 13px; --name-size: 18px; --name-weight: 700;
+  --tab-font: Cinzel, Georgia, serif;
+}
+.library { --ink: var(--bg); --hi: var(--line); color: var(--fg); display: flex; flex-direction: column; gap: 16px; padding: 44px 4px 8px; font-size: 14px; }
+.library a { color: var(--accent); text-decoration: none; }
+.lib-art { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; background: var(--bg); }
+.lib-art svg { position: absolute; }
+.lib-art .kanji { position: absolute; right: 10px; top: 56%; writing-mode: vertical-rl; font: 13px var(--serif); letter-spacing: .5em; color: var(--accent); opacity: .55; }
+
+.lib-head { display: flex; align-items: flex-end; justify-content: space-between; }
+.lib-head .back { font-size: 12px; letter-spacing: .08em; }
+.lib-head h1 { margin: 2px 0 0; font: var(--title-weight) var(--title-size)/46px var(--title-font); height: 46px; color: var(--fg); }
+.lib-actions { display: flex; gap: 8px; }
+.library .icon { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--accent); background: transparent; color: var(--accent);
+  display: grid; place-items: center; padding: 0; font-size: 22px; line-height: 1; }
+.lede { margin: 0; font: var(--lede-style) var(--lede-size)/24px var(--serif); height: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.lede .hl { color: var(--hl); font-style: normal; font-weight: 700; }
+
+.lib-tabs { display: flex; justify-content: center; gap: 32px; }
+.lib-tabs a { padding: 8px 4px; border-bottom: 1px solid transparent; color: var(--muted); font: 15px var(--tab-font); letter-spacing: .16em; }
+.library .lib-tabs [aria-selected=true] { border-color: var(--accent); color: var(--hl); }
+
+.lib-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 36px; }
+.lib-switch { display: flex; flex: none; padding: 3px; border: 1px solid var(--line); border-radius: 999px; }
+.library .lib-switch a { padding: 6px 14px; border-radius: 999px; color: var(--muted); font-size: 13px; white-space: nowrap; }
+.library .lib-switch [aria-current=page] { background: var(--accent); color: var(--bg); font-weight: 500; }
+.lib-chips { display: flex; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.lib-chips button { flex: none; padding: 5px 12px; border: 1px solid var(--line); border-radius: 0; background: none; color: var(--muted); font: var(--chip-size) var(--serif); }
+.lib-chips [aria-pressed=true] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--chip-on); }
+
+.lib-list { display: flex; flex-direction: column; }
+.lib-list h2 { margin: 14px 0 2px; font: 500 12px var(--tab-font); letter-spacing: .18em; color: var(--muted); }
+.lib-list h2:first-child { margin-top: 0; }
+.lib-list .foot { margin: 14px 0 0; text-align: center; font: var(--lede-style) 15px var(--serif); color: var(--muted); }
+.lib-list .foot:empty { display: none; }
+
+/* Book rows */
+.book { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule);
+  width: 100%; text-align: left; font: inherit; color: inherit; background: none; border-radius: 0; }
+.book:has(+ h2), .book:has(+ .foot), .book:last-child { border-bottom: 0; }
+.book .cover { display: block; width: 40px; height: 58px; object-fit: cover; background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 22%, #1A1422), var(--bg)); box-shadow: 0 0 0 1px var(--line); }
+.book .body { display: block; min-width: 0; }
+.book .title { display: block; font: var(--name-weight) var(--name-size)/1.1 var(--serif); color: var(--fg); }
+.library .book .title a { color: inherit; }
+.book .sub { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.book .act { padding: 6px 10px; border: 1px solid var(--line); background: none; color: var(--muted); font-size: 12px; border-radius: 999px; }
+.book .act.on { border-color: var(--accent); color: var(--accent); }
+.book .stars { color: var(--accent); letter-spacing: 1px; font-size: 12px; }
+.book.series { cursor: pointer; }
+.book .stack { position: relative; display: block; width: 40px; height: 58px; }
+.book .stack .cover { position: absolute; left: 0; top: 0; width: 36px; }
+.book .stack .layer { position: absolute; display: block; width: 34px; box-shadow: 0 0 0 1px var(--line); background: color-mix(in srgb, var(--accent) 10%, #1A1422); }
+.book .stack .l1 { left: 3px; top: -2px; height: 56px; }
+.book .stack .l2 { left: 6px; top: -4px; height: 54px; opacity: .8; }
+.book .bars { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.book .bars span { width: 18px; height: 3px; background: var(--accent); }
+.book .bars .own { opacity: .55; }
+.book .bars .want { background: none; border: 1px solid var(--line); }
+.book .chev { color: var(--accent); font-size: 18px; }
+.book.wanted { grid-template-columns: 52px 1fr auto; gap: 14px; padding: 12px 0; }
+.book.wanted .cover { width: 52px; height: 76px; }
+.book.wanted .title { font-size: calc(var(--name-size) + 1px); }
+.book .meta { margin-top: 6px; font-size: 12px; }
+.book .price { color: var(--fg); font-variant-numeric: tabular-nums; font-weight: 400; }
+.library .store { border-color: var(--line); }
+.book .bought { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
+.book .bought input { width: 22px; height: 22px; margin: 0; accent-color: var(--accent); }
+
+/* Manga cards */
+.lib-list .manga + .manga { margin-top: 12px; }
+.manga { display: grid; grid-template-columns: 52px 1fr; gap: 14px; padding: 12px; background: rgba(20,14,14,.82); border-left: 2px solid var(--line); }
+.manga.hot { border-left-color: var(--accent); }
+.manga .cover { display: block; width: 52px; height: 76px; object-fit: cover; background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 18%, #0D0707), var(--bg)); box-shadow: 0 0 0 1px var(--line); }
+.manga .body { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.manga .title { font: var(--name-weight) var(--name-size)/1.15 var(--serif); }
+.manga .sub { color: var(--muted); font-size: 12px; }
+.manga .small { color: var(--muted); font-size: 11px; }
+.manga .vbar { display: flex; gap: 2px; margin-top: 4px; }
+.manga .vbar span { height: 4px; background: var(--accent); }
+.manga .vbar .want { background: var(--rule); }
+.manga .sum { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; font-size: 13px; }
+.manga .sum .muted { font-size: inherit; }
+.manga .sum .price { color: var(--hl); font-variant-numeric: tabular-nums; }
+.manga .choose { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; min-height: 36px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 0; background: none; color: var(--fg); font-size: 12px; text-align: left; }
+.manga .choose span { color: var(--accent); }
