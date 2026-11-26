@@ -11,18 +11,38 @@ const byNumber = (a: Item, b: Item) =>
 
 const stateOf = (reads: Read[]) => (i: Item) => readState(reads.filter(r => r.item_id === i.id))
 
+// Groups on trimmed, case-insensitive name; the group is named by the first spelling seen.
 function bySeries(items: Item[], key: (i: Item) => string) {
-  const m = new Map<string, Item[]>()
-  for (const i of items) m.set(key(i), [...(m.get(key(i)) ?? []), i])
-  return m
+  const m = new Map<string, { name: string; items: Item[] }>()
+  for (const i of items) {
+    const name = key(i).trim()
+    const k = name.toLowerCase()
+    const g = m.get(k) ?? { name, items: [] }
+    g.items.push(i)
+    m.set(k, g)
+  }
+  return [...m.values()]
+}
+
+// Collapses sorted volume numbers into runs: 14,15,16,20 -> "14–16, 20".
+function volumeRange(nums: number[]): string {
+  const sorted = [...new Set(nums)].sort((a, b) => a - b)
+  const runs: string[] = []
+  for (let i = 0; i < sorted.length; ) {
+    let j = i
+    while (sorted[j + 1] === sorted[j] + 1) j++
+    runs.push(j === i ? `${sorted[i]}` : `${sorted[i]}–${sorted[j]}`)
+    i = j + 1
+  }
+  return runs.join(', ')
 }
 
 export function groupBooks(items: Item[], reads: Read[]): BookGroups {
   const state = stateOf(reads)
-  const grouped = bySeries(items.filter(i => i.series), i => i.series!)
-  const series: SeriesGroup[] = [...grouped]
-    .filter(([, books]) => books.length >= 2)
-    .map(([name, books]) => {
+  const grouped = bySeries(items.filter(i => i.series?.trim()), i => i.series!)
+  const series: SeriesGroup[] = grouped
+    .filter(g => g.items.length >= 2)
+    .map(({ name, items: books }) => {
       const sorted = [...books].sort(byNumber)
       return {
         name, author: sorted.find(b => b.author)?.author ?? null, books: sorted,
@@ -30,6 +50,7 @@ export function groupBooks(items: Item[], reads: Read[]): BookGroups {
         read: sorted.filter(b => state(b) === 'read').length,
       }
     })
+    .filter(s => s.owned > 0) // Shelf = owned; wanted-only series belong to the wishlist
     .sort((a, b) => a.name.localeCompare(b.name))
   const inGroup = new Set(series.flatMap(s => s.books.map(b => b.id)))
   const owned = items.filter(i => i.bought)
@@ -39,16 +60,16 @@ export function groupBooks(items: Item[], reads: Read[]): BookGroups {
   return { reading, series, singles }
 }
 
+// Returns every series; callers filter owned.length > 0 for the shelf and wanted.length > 0 for the wishlist.
 export function groupManga(items: Item[], reads: Read[]): MangaSeries[] {
   const state = stateOf(reads)
-  return [...bySeries(items, i => i.series ?? i.title)]
-    .map(([name, all]) => {
+  return bySeries(items, i => i.series || i.title)
+    .map(({ name, items: all }) => {
       const sorted = [...all].sort(byNumber)
       const owned = sorted.filter(i => i.bought)
       const wanted = sorted.filter(i => !i.bought)
       const nums = wanted.map(i => i.series_number).filter((n): n is number => n !== null)
-      const range = nums.length ? `${Math.min(...nums)}–${Math.max(...nums)}` : ''
-      return { name, author: sorted.find(i => i.author)?.author ?? null, owned, wanted, read: owned.filter(i => state(i) === 'read').length, range }
+      return { name, author: sorted.find(i => i.author)?.author ?? null, owned, wanted, read: owned.filter(i => state(i) === 'read').length, range: volumeRange(nums) }
     })
     .sort((a, b) => a.name.localeCompare(b.name))
 }

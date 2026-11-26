@@ -38,7 +38,43 @@ describe('groupBooks', () => {
   })
 })
 
+describe('groupBooks normalization and shelf', () => {
+  it('merges series spelled with different case/whitespace', () => {
+    const b = (title: string, series: string) => item({ title, series })
+    const { series } = groupBooks([b('A', 'Harry Potter'), b('B', 'Harry Potter '), b('C', 'harry potter')], [])
+    expect(series).toHaveLength(1)
+    expect(series[0].name).toBe('Harry Potter')
+    expect(series[0].books).toHaveLength(3)
+  })
+  it('omits wanted-only series from series and singles', () => {
+    const w = (t: string) => item({ title: t, series: 'Wish', bought: false })
+    const g = groupBooks([w('A'), w('B')], [])
+    expect(g.series).toEqual([])
+    expect(g.singles).toEqual([])
+  })
+})
+
 describe('groupManga', () => {
+  const wantedRange = (nums: number[]) =>
+    groupManga(nums.map(n => item({ collection: 'manga', series: 'S', series_number: n, bought: false })), [])[0].range
+  it('collapses consecutive volumes into runs', () => {
+    expect(wantedRange([14, 15, 16, 20])).toBe('14–16, 20')
+    expect(wantedRange([14, 16, 20])).toBe('14, 16, 20')
+    expect(wantedRange([14])).toBe('14')
+    expect(wantedRange([14, 15, 16, 17, 18, 19, 20, 21, 22, 23])).toBe('14–23')
+  })
+  it('ignores volumes without a number in the range', () => {
+    const m = groupManga([item({ series: 'S', bought: false }), item({ series: 'S', series_number: 3, bought: false })], [])
+    expect(m[0].range).toBe('3')
+  })
+  it('returns wanted-only series with empty owned', () => {
+    const [m] = groupManga([item({ collection: 'manga', series: 'W', series_number: 1, bought: false })], [])
+    expect(m.owned).toEqual([])
+    expect(m.wanted).toHaveLength(1)
+  })
+  it('falls back to title when series is empty string', () => {
+    expect(groupManga([item({ title: 'Akira', series: '' })], [])[0].name).toBe('Akira')
+  })
   it('groups by series with the wanted range', () => {
     const vols = (from: number, to: number, bought: boolean) =>
       Array.from({ length: to - from + 1 }, (_, i) => item({ collection: 'manga', title: 'Demon Slayer', series: 'Demon Slayer', series_number: from + i, bought }))
