@@ -46,3 +46,7 @@ test('searchBooks reports Google\'s reason on a refused request', async () => {
   expect(await searchBooks('x')).toEqual({ ok: false, reason: '403: Requests from referer are blocked.' })
   f.mockRestore()
 })
+
+test('regional language codes map to the base language', () => {
+  expect(toCandidate(volume({ language: 'pt-BR' })).language).toBe('Portuguese')
+})

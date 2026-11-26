@@ -171,7 +171,7 @@ a { color: var(--accent); }
 .book.series { cursor: pointer; }
 .book .stack { position: relative; display: block; width: 40px; height: 58px; }
 .book .stack .cover { position: absolute; left: 0; top: 0; width: 36px; }
-.book .stack .layer { position: absolute; display: block; width: 34px; box-shadow: 0 0 0 1px var(--line); background: color-mix(in srgb, var(--accent) 10%, #1A1422); }
+.book .stack .layer { position: absolute; display: block; width: 34px; object-fit: cover; box-shadow: 0 0 0 1px var(--line); background: color-mix(in srgb, var(--accent) 10%, #1A1422); }
 .book .stack .l1 { left: 3px; top: -2px; height: 56px; }
 .book .stack .l2 { left: 6px; top: -4px; height: 54px; opacity: .8; }
 .book .bars { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
@@ -243,8 +243,9 @@ a { color: var(--accent); }
 .bookform .nocover { display: grid; place-items: center; font-size: 9px; text-align: center; color: var(--muted); border: 1px solid var(--line, currentColor); }
 .bookform .cover-preview { width: 72px; height: 108px; object-fit: cover; }
 .bookform .rating button { background: none; border: 0; font-size: 1.3rem; padding: 0 2px; color: var(--accent, var(--fg)); }
-.bookform .own { display: flex; gap: 16px; }
-.bookform .own label { display: flex; gap: 6px; align-items: center; }
+.bookform .own { align-self: start; }
+.bookform .own button { padding: 6px 14px; border: 0; border-radius: 999px; background: none; color: var(--muted); font-size: 13px; }
+.bookform .own [aria-pressed=true] { background: var(--accent); color: var(--bg); font-weight: 500; }
 .library button.manga.open { width: 100%; text-align: left; color: inherit; font: inherit; border: 0; border-left: 2px solid var(--line); }
 .library button.manga.open.hot { border-left-color: var(--accent); }
 .library button.manga.open .body { align-items: stretch; }

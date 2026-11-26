@@ -81,7 +81,7 @@ export function SeriesRow({ group, reads, onOpen }: { group: SeriesGroup; reads:
   return (
     <button className="book series" onClick={onOpen}>
       <span className="stack">
-        {books.slice(1, 3).map((b, i) => <span key={b.id} className={`layer l${i + 1}`} />).reverse()}
+        {books.slice(1, 3).map((b, i) => <Cover key={b.id} item={b} className={`cover layer l${i + 1}`} />).reverse()}
         <Cover item={books[0]} />
       </span>
       <span className="body">

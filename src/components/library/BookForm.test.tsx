@@ -64,7 +64,7 @@ test('I want it saves an unbought book; price and genres are parsed', async () =
   type('Title', 'Marca')
   type('Price (€)', '24,90')
   type('Genres', ' fantasy, ,YA ')
-  fireEvent.click(screen.getByRole('radio', { name: 'I want it' }))
+  fireEvent.click(screen.getByRole('button', { name: 'I want it' }))
   fireEvent.click(screen.getByRole('button', { name: '4 stars' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() => expect(onSaved).toHaveBeenCalled())
@@ -76,7 +76,7 @@ test('I want it saves an unbought book; price and genres are parsed', async () =
 test('I own it saves bought today', async () => {
   const { onSaved } = setup()
   type('Title', 'Marca')
-  fireEvent.click(screen.getByRole('radio', { name: 'I own it' }))
+  fireEvent.click(screen.getByRole('button', { name: 'I own it' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() => expect(onSaved).toHaveBeenCalled())
   expect(items.addItem).toHaveBeenCalledWith(expect.objectContaining({ bought: true, bought_on: reads.todayISO(), genres: null, rating: null }))

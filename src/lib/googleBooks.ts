@@ -14,7 +14,8 @@ export function toCandidate(volume: unknown): Candidate {
     title: v.title ?? '',
     authors: v.authors ?? [],
     pages: v.pageCount || null,
-    language: v.language ? LANGS[v.language] ?? v.language : null,
+    // Google often tags Portuguese editions as pt-BR, so regional variants collapse to the base language.
+    language: v.language ? LANGS[v.language.split('-')[0]] ?? v.language : null,
     cover: cover ? cover.replace(/^http:/, 'https:') : null,
     year: v.publishedDate?.slice(0, 4) || null,
   }

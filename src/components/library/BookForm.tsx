@@ -133,9 +133,9 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
               onClick={() => setRating(rating === n ? 0 : n)}>{n <= rating ? '★' : '☆'}</button>
           ))}
         </div>
-        <div role="radiogroup" aria-label="Ownership" className="own">
+        <div role="group" aria-label="Ownership" className="lib-switch own">
           {[true, false].map((o) => (
-            <label key={String(o)}><input type="radio" name="own" checked={own === o} onChange={() => setOwn(o)} />{o ? 'I own it' : 'I want it'}</label>
+            <button key={String(o)} type="button" aria-pressed={own === o} onClick={() => setOwn(o)}>{o ? 'I own it' : 'I want it'}</button>
           ))}
         </div>
         {initial.id && own && latest && <>{field('started', 'Started on', { type: 'date' })}{field('finished', 'Finished on', { type: 'date' })}</>}

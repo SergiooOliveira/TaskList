@@ -148,7 +148,7 @@ it('series + Add a book prefills series, author and next number as wanted', asyn
   expect(screen.getByLabelText('Series')).toHaveValue('The Legendborn Cycle')
   expect(screen.getByLabelText('Author')).toHaveValue('Tracy Deonn')
   expect(screen.getByLabelText('Number')).toHaveValue('4')
-  expect(screen.getByRole('radio', { name: 'I want it' })).toBeChecked()
+  expect(screen.getByRole('button', { name: 'I want it' })).toHaveAttribute('aria-pressed', 'true')
 })
 
 it('the edit button on a book opens the form filled in', async () => {
