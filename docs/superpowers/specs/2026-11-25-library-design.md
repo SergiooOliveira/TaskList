@@ -16,9 +16,10 @@ You track your books in Notion ("Dark Academia Library"). It works, but it isn't
    - **Books** lists your owned books: cover, title, author, series and number, reading state, and rating.
    - **Manga** groups volumes **by series**: one row per series, with a volume bar of owned vs. known volumes (known = owned + wanted). Tap the row to open the volumes.
 3. **Wishlist and Library are the same list (Approach B).**
-   - Every entry has a fixed **collection**: Book, Manga, Vinyl, Game or Other. It replaces the free-text type.
+   - An entry can belong to a **collection screen**: Book or Manga now, Vinyl and Game in later rounds. Entries without one are general wishlist items.
+   - **The main Wishlist shows only general items.** Your own **types** stay exactly as today: free text, created with the picker, coloured, and used as filter chips. Collection items never appear there.
+   - **Each collection screen has its own wishlist.** The Library has a **Shelf | Wishlist** switch in both tabs. Wanted books and manga live there, and the Shelf shows what you own.
    - **Ticking "Bought"** flips an entry from wanted to owned. Nothing is copied or moved. The price becomes **what you paid**, and today's date is stored as the purchase date.
-   - Wanted books and manga show in the Wishlist. Owned ones show in the Library.
 4. **Adding a book.** In the Library, **+** opens a modal:
    - Choose **I own it** or **I want it**.
    - Type a title or ISBN, then **Find details** to fill in the cover, author, pages and language from Google Books. Pick the right edition from the results.
@@ -51,7 +52,7 @@ You track your books in Notion ("Dark Academia Library"). It works, but it isn't
 
 ## Non-goals (this round)
 
-- Vinyls, Games, the Steam dashboard, and series suggestions ("you own book 1, add the rest"). These are later rounds of the roadmap. The Vinyl and Game collections exist only as wishlist labels for now.
+- Vinyls, Games, the Steam dashboard, and series suggestions ("you own book 1, add the rest"). These are later rounds of the roadmap. Until their screens exist, vinyls and games stay in the main Wishlist under your own types.
 - Reading progress by page (e.g. "p. 212 / 573"). Progress is per book: reading or finished.
 - Total volume counts for a manga series that you haven't added as owned or wanted.
 - Sharing, multiple users, a public app.
@@ -88,7 +89,7 @@ Migration `supabase/migrations/0003_library.sql`. The user runs it in the SQL ed
 
 | Column | Notes |
 |---|---|
-| `collection text not null default 'other'` | check: `book`, `manga`, `vinyl`, `game`, `other` |
+| `collection text` | null = general wishlist item; else `book` or `manga` (check constraint; `vinyl`/`game` added in their rounds) |
 | `author text` | |
 | `series text`, `series_number numeric` | |
 | `genres text[]` | |
@@ -102,12 +103,11 @@ It also changes:
 - `url` and `store` become **nullable**, because a book from a bookstore has no link.
 - `store` now means **where you got it** ("Bertrand", "Gift"), still filled from the link's domain when there is a link.
 - `bought` stays and means **owned**.
-- `category` (yesterday's free-text type) is **converted to `collection`**, then dropped. Names map without regard to case:
-  - book/books/livro(s) → book
-  - manga → manga
-  - vinyl(s)/vinil(s) → vinyl
-  - game(s)/jogo(s) → game
-  - anything else → other
+- `category` (your free-text type) **stays** for general wishlist items.
+- Existing wishlist items typed as books move to the Library's wishlist. Names match without regard to case:
+  - book/books/livro(s) → `collection = 'book'`, and `category` is cleared
+  - manga → `collection = 'manga'`, and `category` is cleared
+  - every other type, vinyls and games included, stays as it is
 
 **`reads`** (new), with the same row-level security pattern (one `for all` policy on `user_id = auth.uid()`):
 
@@ -138,7 +138,7 @@ Source: the `_all.csv` export (45 real rows; the 5 empty "Owned" rows at the end
 | Rating ⭐️ count / "No Rating" / empty | 1–5 / null |
 | Bought (store or "Gift") | store |
 | Price "€24.90" | price_cents (Gift = 0) |
-| Status **Wishlist** (12) | `bought = false` |
+| Status **Wishlist** (12) | `bought = false`, shown in the Library's wishlist |
 | Status **Owned** (1) | `bought = true`, no read |
 | Status **Currently Reading** (2) | `bought = true`, a read started on Date Start (MM/DD/YYYY), no finish |
 | Status **Finished** (30) | `bought = true`, one `before_app` read |
@@ -159,11 +159,12 @@ The import is a small Node script in `scripts/` that reads the CSV and prints th
 
 ## Calls I made (check these)
 
-1. **The fixed collection replaces yesterday's free-text type.** Your current types are converted by name, and anything that isn't a book, manga, vinyl or game becomes **Other**. The coloured type chips in the Wishlist become collection chips.
-2. **`bought` keeps meaning owned.** The wishlist keeps its Not bought / Bought toggle. The Library shows owned books and manga.
+1. **Your free types stay.** Collections (Book, Manga) are a separate thing that decides which screen an item lives on, not a replacement for types.
+2. **`bought` keeps meaning owned.** The main wishlist keeps its Not bought / Bought toggle for general items. The Library's Shelf | Wishlist switch is the same flag for books and manga.
 3. **Purchase date** is recorded from now on, for spending per year. Imported purchases count as "before the app".
 4. **Manga volume bar** = owned vs. owned + wanted volumes. For example, Demon Slayer shows **13 / 23**, because volumes 14–23 are on your wishlist. Real series totals (e.g. 41 for Berserk) are left out.
 5. **Book lookup uses Google Books**, which is better for Portuguese editions than Open Library. It isn't tested from your setup yet.
 6. **Covers from Notion need the images:** you upload the zip's image folder to a Storage bucket once. Without that, covers come from **Find details**, book by book.
-7. **Vinyl and Game** exist only as wishlist labels until their own rounds.
-8. **The Wishlist "Bought" tab leaves out books and manga,** since those now live in the Library. Otherwise your 33 imported books would fill it.
+7. **Vinyl and Game** get collection screens in their own rounds.
+8. **Existing wishlist items typed "Books"/"Livros"/"Manga" move to the Library's wishlist.** Vinyls and games stay in the main Wishlist until their screens exist.
+9. **The home screen counts** only general items for Wishlist, and books + manga (owned · wanted) for Library.
