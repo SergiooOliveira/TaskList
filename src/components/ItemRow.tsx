@@ -23,7 +23,7 @@ export default function ItemRow({ item, onToggleBought, onEdit, onDelete }: Prop
         <div className="thumb" aria-hidden="true">{item.title.charAt(0).toUpperCase()}</div>
       )}
       <div className="name">
-        <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
+        <a href={item.url ?? undefined} target="_blank" rel="noopener noreferrer">{item.title}</a>
         <div className="meta">
           {item.store && <span className="store">{item.store}</span>}
           {item.category && <span className="tag" style={{ '--c': typeColor(item.category) } as React.CSSProperties}>{item.category}</span>}

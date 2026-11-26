@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 export type Item = {
   id: string
   user_id: string
-  url: string
+  url: string | null
   title: string
   image_url: string | null
   store: string | null
@@ -13,7 +13,21 @@ export type Item = {
   category: string | null
   bought: boolean
   created_at: string
+  collection: 'book' | 'manga' | null
+  author: string | null
+  series: string | null
+  form: string | null
+  language: string | null
+  series_number: number | null
+  pages: number | null
+  rating: number | null
+  genres: string[] | null
+  bought_on: string | null
 }
+
+export type NewItem = Partial<Omit<Item, 'id' | 'user_id' | 'created_at'>> & { title: string }
+
+export const boughtPatch = (bought: boolean, today: string): Pick<Item, 'bought' | 'bought_on'> => ({ bought, bought_on: bought ? today : null })
 
 export async function listItems(): Promise<Item[]> {
   const { data, error } = await supabase.from('items').select('*').order('created_at', { ascending: false })
@@ -21,7 +35,7 @@ export async function listItems(): Promise<Item[]> {
   return data as Item[]
 }
 
-export async function addItem(p: Pick<Item, 'url' | 'title' | 'image_url' | 'store' | 'price_cents' | 'category'>): Promise<Item> {
+export async function addItem(p: NewItem): Promise<Item> {
   const { data, error } = await supabase.from('items').insert(p).select().single()
   if (error) throw error
   return data as Item

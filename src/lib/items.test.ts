@@ -1,4 +1,4 @@
-import { applyPriceCheck, dropPercent, formatEuro, type Item } from './items'
+import { applyPriceCheck, boughtPatch, dropPercent, formatEuro, type Item } from './items'
 
 vi.mock('./supabase', () => ({ supabase: {} }))
 
@@ -16,4 +16,9 @@ it('applies the price-check rule', () => {
 it('formats', () => {
   expect(dropPercent(37999, 29999)).toBe(21)
   expect(formatEuro(29999)).toMatch(/299,99\s?€/)
+})
+
+it('builds the bought patch', () => {
+  expect(boughtPatch(true, '2026-11-26')).toEqual({ bought: true, bought_on: '2026-11-26' })
+  expect(boughtPatch(false, '2026-11-26')).toEqual({ bought: false, bought_on: null })
 })
