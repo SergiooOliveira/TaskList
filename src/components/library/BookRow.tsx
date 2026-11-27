@@ -4,10 +4,19 @@ import { canStart, finishRead, openRead, readState, startRead, todayISO, type Re
 import type { SeriesGroup } from '../../lib/library'
 import { href } from '../../lib/route'
 
-export function Cover({ item, className = 'cover' }: { item?: Item; className?: string }) {
-  return item?.image_url
-    ? <img className={className} src={item.image_url} alt="" />
-    : <span className={className} aria-hidden="true" />
+// A missing or broken cover shows a thin book outline and the title (drawn by CSS from data-title, so the title text isn't
+// duplicated next to the row's own), so it reads as "no cover", not a broken image.
+export function Cover({ item, className = 'cover', alt = '' }: { item?: Item; className?: string; alt?: string }) {
+  const [broken, setBroken] = useState<string | null>(null) // the url that failed; a new url gets a fresh try
+  const url = item?.image_url
+  if (url && url !== broken) return <img className={className} src={url} alt={alt} onError={() => setBroken(url)} />
+  return (
+    <span className={`${className} nocover`} data-title={item?.title} {...(alt ? { role: 'img', 'aria-label': alt } : { 'aria-hidden': true })}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5zM5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3M9 7h6" />
+      </svg>
+    </span>
+  )
 }
 
 // The title is the row's link to the details screen; CSS stretches it over the row, action buttons sit above it.

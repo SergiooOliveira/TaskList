@@ -4,6 +4,7 @@ import { listReads, type Read } from '../../lib/reads'
 import { href, type Kind } from '../../lib/route'
 import { beforeApp, readingStats, spendingStats, years, type Pairs, type Year } from '../../lib/stats'
 import { NightshadeArt } from './themes'
+import { Cover } from './BookRow'
 
 const num = new Intl.NumberFormat('pt-PT')
 const MONTHS = Array.from({ length: 12 }, (_, m) => new Date(2000, m, 1).toLocaleString('en', { month: 'long' }))
@@ -47,7 +48,7 @@ function Reading({ items, reads, year }: { items: Item[]; reads: Read[]; year: Y
             ))}
           </ol>
           <div className="stat-covers">
-            {s.finished.filter((i) => i.image_url).map((i, k) => <img key={k} src={i.image_url!} alt={i.title} />)}
+            {s.finished.map((i, k) => <Cover key={k} item={i} alt={i.title} />)}
           </div>
           <Bars title="Top genres" rows={s.topGenres} />
           {s.longest && <p>Longest: {s.longest.title} ({num.format(s.longest.pages!)} pages)</p>}
