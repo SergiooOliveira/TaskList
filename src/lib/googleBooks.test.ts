@@ -94,6 +94,14 @@ test('a merged ISBN without a cover falls back to the Open Library ISBN cover', 
   expect(r[0].cover).toBe('https://covers.openlibrary.org/b/isbn/9789-M.jpg?default=false')
 })
 
+test('no ISBN: same title and author merge even when spaced differently ("J.K." vs "J. K.")', async () => {
+  route(() => json({ items: [volume({ title: 'Harry Potter e a Câmara dos Segredos', authors: ['J.K. Rowling'] })] }),
+    () => json({ docs: [{ title: 'Harry Potter e a Camara dos Segredos', author_name: ['J. K. Rowling'], cover_i: 7 }] }))
+  const r = await findDetails({ title: 'Harry Potter e a Câmara dos Segredos' }) as Candidate[]
+  expect(r).toHaveLength(1)
+  expect(r[0].cover).toBe('https://covers.openlibrary.org/b/id/7-M.jpg')
+})
+
 test('Open Library mapping', () => {
   expect(fromOpenLibrary({ title: 'Lendários', author_name: ['Tracy Deonn'], number_of_pages_median: 480, first_publish_year: 2021, language: ['por', 'eng'], isbn: ['9789', '978x'], cover_i: 42 }))
     .toEqual({ title: 'Lendários', authors: ['Tracy Deonn'], pages: 480, language: 'Portuguese', cover: 'https://covers.openlibrary.org/b/id/42-M.jpg', year: '2021', summary: null, isbn: '9789' })

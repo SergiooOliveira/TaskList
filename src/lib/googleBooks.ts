@@ -50,7 +50,7 @@ export function buildQuery({ title, author = '', series = '', number = '' }: Sea
 }
 
 const words = (...xs: string[]) => xs.map((x) => x.replace(/[^\p{L}\p{N}\s]/gu, ' ')).join(' ').replace(/\s+/g, ' ').trim()
-const norm = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
+const norm = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '').trim()
 const langCode = (l: string) => Object.keys(LANGS).find((k) => k === norm(l) || norm(LANGS[k]) === norm(l))
 
 // Same ISBN, or (when either lacks one) same title + first author: one book, so each field comes from whichever result has it.
