@@ -1,0 +1,25 @@
+/* App feel: no pull-to-refresh, no tap flash, no text selection on controls, clear of the status/nav bars. */
+html, body { overscroll-behavior-y: none; }
+html { -webkit-tap-highlight-color: transparent; }
+button, .book, .manga, .vol, .home-card { -webkit-user-select: none; user-select: none; }
+.mock { padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+
+/* "No cover": a thin book outline and the title, in the theme's muted line colour. Overrides the gradient box at every size. */
+.library .cover.nocover { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 3px; overflow: hidden;
+  background: var(--bg); box-shadow: 0 0 0 1px var(--line); color: var(--muted); text-align: center; }
+.nocover svg { width: 45%; max-width: 40px; flex: none; }
+.nocover::after { content: attr(data-title); font: 7px/1.15 var(--body); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.detail .hero .cover.nocover { gap: 10px; padding: 12px; }
+.detail .hero .nocover::after { font-size: 13px; }
+.book.wanted .nocover::after, .manga .nocover::after { font-size: 8px; }
+.book .stack .layer.nocover > *, .book .stack .layer.nocover::after { display: none; } /* the volumes behind the front one are just edges */
+.stats .stat-covers .nocover { width: 48px; height: 72px; flex: none; border-radius: 3px; }
+
+/* Bottom sheets: drag the grip/header down to close; no scroll chaining into the page. */
+.sheet, .sheet-list { overscroll-behavior: contain; }
+.sheet { transition: transform .2s ease-out; }
+.sheet.dragging { transition: none; }
+.sheet .grip { padding: 8px 30px; margin-top: 0; width: 100px; height: 20px; background: var(--line) content-box; cursor: grab; }
+.sheet .grip, .sheet-head { touch-action: none; }
+.sheet-foot { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+@media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }

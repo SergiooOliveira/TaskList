@@ -49,6 +49,12 @@ describe('SeriesPanel', () => {
     expect(items.updateItem).toHaveBeenCalledWith('ii', { bought: true, bought_on: today })
   })
 
+  it('opening a book from the panel closes the panel', () => {
+    const p = setup()
+    fireEvent.click(screen.getByRole('link', { name: 'Lendários' }))
+    expect(p.onClose).toHaveBeenCalled()
+  })
+
   it('closes on the close button', () => {
     const p = setup()
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
