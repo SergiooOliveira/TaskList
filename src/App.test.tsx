@@ -22,5 +22,5 @@ it('renders the heading and a decorative background', async () => {
 it('shows Home for a session', async () => {
   session.current = {}
   render(<App />)
-  expect(await screen.findByRole('link', { name: /Library/ })).toBeInTheDocument()
+  expect(await screen.findByRole('link', { name: /^Books/ })).toBeInTheDocument()
 })

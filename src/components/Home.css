@@ -1,0 +1,14 @@
+/* Home only: plain black & white, no accent colour. Everything is scoped under .home (and the page behind it). */
+body:has(.home) { background: #0A0A0A; }
+.mock:has(> .home) > .deco { display: none; }
+.home { --fg: #FFFFFF; --muted: #B3B3B3; --accent: #FFFFFF; --ink: #0A0A0A; color: var(--fg); display: grid; gap: 20px; }
+.home .top button, .home button { background: none; color: var(--fg); border: 1px solid #FFFFFF; }
+.home .top > button:last-child { color: var(--muted); border-color: #555555; }
+.home-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.home-card { display: flex; flex-direction: column; justify-content: space-between; gap: 6px; min-height: 150px; aspect-ratio: 1 / 1.05; padding: 16px;
+  border: 1px solid #FFFFFF; border-radius: 4px; background: #0A0A0A; color: #FFFFFF; text-decoration: none; min-width: 0; }
+.home-card:active { background: #FFFFFF; color: #0A0A0A; }
+.home-card:active .home-line { color: #0A0A0A; }
+.home-card svg { width: 40px; height: 40px; margin-bottom: auto; }
+.home-label { font: 500 1.15rem var(--display); }
+.home-line { font-size: .78rem; color: var(--muted); overflow-wrap: anywhere; }
