@@ -19,7 +19,7 @@ const rd = (id: string, item_id: string, o: Partial<Read> = {}): Read => ({ id, 
 // Notion-shaped: 12 owned books (2 being read), 2 wanted.
 const lb = { series: 'The Legendborn Cycle', author: 'Tracy Deonn' }
 const fixture: Item[] = [
-  book('lend', 'Lendários', { ...lb, series_number: 1 }),
+  book('lend', 'Lendários', { ...lb, series_number: 1, language: 'Portuguese' }),
   book('marca', 'Marca de Sangue', { ...lb, series_number: 2, bought: false, price_cents: 2490, store: 'Bertrand' }),
   book('linh', 'Linhagens de Poder', { ...lb, series_number: 3, bought: false, price_cents: 2590, store: 'Bertrand' }),
   book('temp', 'A templária', { author: 'Maria João Fialho Gouveia' }),
@@ -142,13 +142,14 @@ it('+ opens the book form and saving reloads the list', async () => {
   expect(screen.getByRole('heading', { name: 'READING NOW' })).toBeInTheDocument()
 })
 
-it('series + Add a book prefills series, author and next number as wanted', async () => {
+it('series + Add a book prefills series, author, language and next number as wanted', async () => {
   render(<Library kind="book" view="shelf" />)
   fireEvent.click(await screen.findByRole('button', { name: /The Legendborn Cycle/ }))
   fireEvent.click(screen.getByRole('button', { name: '+ Add a book' }))
   expect(screen.getByLabelText('Series')).toHaveValue('The Legendborn Cycle')
   expect(screen.getByLabelText('Author')).toHaveValue('Tracy Deonn')
   expect(screen.getByLabelText('Number')).toHaveValue('4')
+  expect(screen.getByLabelText('Language')).toHaveValue('Portuguese') // so Find details ranks that language first
   expect(screen.getByRole('button', { name: 'I want it' })).toHaveAttribute('aria-pressed', 'true')
 })
 

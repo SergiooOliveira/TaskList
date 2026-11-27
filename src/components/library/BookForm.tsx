@@ -41,7 +41,7 @@ export default function BookForm({ initial, collection, forms, reads = [], onSav
   const [failure, setFailure] = useState('')
   const set = (k: keyof typeof v) => (x: string) => setV((o) => ({ ...o, [k]: x }))
 
-  const fields = { title: v.title, author: v.author, series: v.series, number: v.number }
+  const fields = { title: v.title, author: v.author, series: v.series, number: v.number, language: v.language }
   const find = () => findDetails(fields).then(setFound)
   const pick = (c: Candidate) => {
     setV((o) => ({ ...o, title: c.title || o.title, author: c.authors.join(', ') || o.author,

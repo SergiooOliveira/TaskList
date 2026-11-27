@@ -8,7 +8,7 @@ vi.mock('../../lib/supabase', () => ({ supabase: {} }))
 vi.mock('../../lib/items', async (orig) => ({ ...(await orig<typeof items>()), addItem: vi.fn(), updateItem: vi.fn(), deleteItem: vi.fn() }))
 vi.mock('../../lib/reads', async (orig) => ({ ...(await orig<typeof reads>()), updateRead: vi.fn() }))
 
-const cand: gb.Candidate = { title: 'Lendários', authors: ['Tracy Deonn'], pages: 480, language: 'Portuguese', cover: 'https://img.test/c.jpg', year: '2021', summary: null }
+const cand: gb.Candidate = { title: 'Lendários', authors: ['Tracy Deonn'], pages: 480, language: 'Portuguese', cover: 'https://img.test/c.jpg', year: '2021', summary: null, isbn: null }
 const setup = (props: Partial<React.ComponentProps<typeof BookForm>> = {}) => {
   const onSaved = vi.fn(), onCancel = vi.fn()
   render(<BookForm initial={{}} collection="book" forms={['Prose']} onSaved={onSaved} onCancel={onCancel} {...props} />)
@@ -30,7 +30,7 @@ test('lookup failure and empty result read differently and keep the form editabl
   expect(await screen.findByText('No matches. Fill in the details yourself.')).toBeInTheDocument()
   f.mockRejectedValue(new Error('offline'))
   fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
-  expect(await screen.findByText(/Couldn't reach Google Books \(network error\)\. Fill in the details yourself\./)).toBeInTheDocument()
+  expect(await screen.findByText(/Couldn't reach the book search \(network error\)\. Fill in the details yourself\./)).toBeInTheDocument()
   type('Pages', '12')
   expect(screen.getByLabelText('Pages')).toHaveValue('12')
 })
@@ -57,6 +57,26 @@ test('a match without a cover says so', async () => {
   type('Title', 'Lend')
   fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
   expect(await screen.findByText('No cover')).toBeInTheDocument()
+})
+
+test('a cover that fails to load shows "No cover" and is not picked; untitled says so', async () => {
+  vi.spyOn(gb, 'findDetails').mockResolvedValue([{ ...cand, title: '' }])
+  setup()
+  type('Title', 'Lend')
+  fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
+  const match = await screen.findByRole('button', { name: /\(no title\)/ })
+  fireEvent.error(match.querySelector('img')!)
+  expect(screen.getByText('No cover')).toBeInTheDocument()
+  fireEvent.click(match)
+  expect(screen.getByLabelText('Cover URL')).toHaveValue('')
+})
+
+test('adding to a series searches in the series\' language', async () => {
+  const spy = vi.spyOn(gb, 'findDetails').mockResolvedValue([])
+  setup({ initial: { series: 'Harry Potter', series_number: 3, author: 'J. K. Rowling', language: 'Portuguese', bought: false } })
+  fireEvent.click(screen.getByRole('button', { name: 'Find details' }))
+  await screen.findByText(/No matches/)
+  expect(spy).toHaveBeenCalledWith(expect.objectContaining({ series: 'Harry Potter', number: '3', language: 'Portuguese' }))
 })
 
 test('I want it saves an unbought book; price and genres are parsed', async () => {

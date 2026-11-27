@@ -43,7 +43,7 @@ export default function ItemPage({ id, edit }: { id: string; edit: boolean }) {
         <BookDetail item={item} reads={readsOf(item)} back={shelf} onSeries={() => setPanel(true)} onChange={saveRead} onError={fail} />
         {panel && item.series && <SeriesPanel group={seriesGroup(mine, data.reads, item.series, kind)} reads={data.reads}
           onClose={() => setPanel(false)} onChange={saveRead} onBought={(u) => saveItems([u])} onError={fail}
-          onAddToSeries={(name, author) => setAdding({ series: name, author, bought: false, series_number: nextInSeries(mine, name) })} />}
+          onAddToSeries={(name, author) => setAdding({ series: name, author, bought: false, series_number: nextInSeries(mine, name), language: mine.find((i) => i.series === name && i.language)?.language })} />}
       </>}
     </div>
   )

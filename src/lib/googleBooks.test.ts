@@ -1,4 +1,5 @@
-import { buildQuery, findDetails, isIsbn, searchBooks, toCandidate } from './googleBooks'
+import { buildQuery, findDetails, isIsbn, rankCandidates, searchBooks, toCandidate, type Candidate } from './googleBooks'
+import { toCandidate as fromOpenLibrary } from './openLibrary'
 
 const volume = (info: object) => ({ volumeInfo: { title: 'Lendários', authors: ['Tracy Deonn'], pageCount: 480, language: 'pt', publishedDate: '2021-09-01', ...info } })
 
@@ -10,7 +11,7 @@ test('isIsbn', () => {
 
 test('toCandidate upgrades http covers and maps language', () => {
   const c = toCandidate(volume({ imageLinks: { thumbnail: 'http://books.google.com/x' } }))
-  expect(c).toEqual({ title: 'Lendários', authors: ['Tracy Deonn'], pages: 480, language: 'Portuguese', cover: 'https://books.google.com/x', year: '2021', summary: null })
+  expect(c).toEqual({ title: 'Lendários', authors: ['Tracy Deonn'], pages: 480, language: 'Portuguese', cover: 'https://books.google.com/x', year: '2021', summary: null, isbn: null })
   expect(toCandidate(volume({ language: 'de' })).language).toBe('de')
 })
 
@@ -66,12 +67,85 @@ test('buildQuery uses title + author, or series + number for volume-only titles'
   expect(buildQuery({ title: '', author: 'X' })).toBeNull()
 })
 
-test('findDetails retries without the author when nothing matches', async () => {
-  const f = vi.spyOn(globalThis, 'fetch')
-    .mockResolvedValueOnce({ ok: true, json: async () => ({ totalItems: 0 }) } as Response)
-    .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [volume({})] }) } as Response)
-  expect(await findDetails({ title: 'Volume I', author: 'Ohba', series: 'Death Note', number: '1' })).toHaveLength(1)
-  expect(decodeURIComponent(String(f.mock.calls[0][0]))).toContain('Death Note 1 inauthor:"Ohba"')
-  expect(decodeURIComponent(String(f.mock.calls[1][0]))).toContain('q=Death Note 1&')
-  f.mockRestore()
+const json = (body: object) => ({ ok: true, json: async () => body }) as Response
+const refused = { ok: false, status: 403, json: async () => ({ error: { message: 'blocked' } }) } as unknown as Response
+// Routes fetch by host: Google gets `google(url)`, Open Library gets `ol(url)`.
+const route = (google: (u: string) => Response | Promise<Response>, ol: (u: string) => Response | Promise<Response>) =>
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (u) => new URL(String(u)).host === 'openlibrary.org' ? ol(String(u)) : google(String(u)))
+const isbn13 = (n: string) => ({ industryIdentifiers: [{ type: 'ISBN_10', identifier: 'x' }, { type: 'ISBN_13', identifier: n }] })
+afterEach(() => vi.restoreAllMocks())
+
+test('toCandidate reads the ISBN, 13 before 10', () => {
+  expect(toCandidate(volume(isbn13('9781'))).isbn).toBe('9781')
+  expect(toCandidate(volume({ industryIdentifiers: [{ type: 'ISBN_10', identifier: '0804' }] })).isbn).toBe('0804')
+})
+
+test('same ISBN merges: one has the cover, the other the title', async () => {
+  route(() => json({ items: [volume({ title: 'Harry Potter e a Pedra Filosofal', ...isbn13('978') }),
+    volume({ title: '', imageLinks: { thumbnail: 'https://g/c.jpg' }, description: 'Longer summary.', ...isbn13('978') })] }), () => json({ docs: [] }))
+  const r = await findDetails({ title: 'Harry Potter e a Pedra Filosofal', author: 'Rowling' }) as Candidate[]
+  expect(r).toHaveLength(1) // the several Google queries return the same items; all merge
+  expect(r[0]).toMatchObject({ title: 'Harry Potter e a Pedra Filosofal', cover: 'https://g/c.jpg', summary: 'Longer summary.', isbn: '978' })
+})
+
+test('a merged ISBN without a cover falls back to the Open Library ISBN cover', async () => {
+  route(() => json({ items: [volume(isbn13('9789'))] }), () => json({ docs: [] }))
+  const r = await findDetails({ title: 'Lendários' }) as Candidate[]
+  expect(r[0].cover).toBe('https://covers.openlibrary.org/b/isbn/9789-M.jpg?default=false')
+})
+
+test('Open Library mapping', () => {
+  expect(fromOpenLibrary({ title: 'Lendários', author_name: ['Tracy Deonn'], number_of_pages_median: 480, first_publish_year: 2021, language: ['por', 'eng'], isbn: ['9789', '978x'], cover_i: 42 }))
+    .toEqual({ title: 'Lendários', authors: ['Tracy Deonn'], pages: 480, language: 'Portuguese', cover: 'https://covers.openlibrary.org/b/id/42-M.jpg', year: '2021', summary: null, isbn: '9789' })
+  expect(fromOpenLibrary({ language: ['fre'] })).toMatchObject({ title: '', language: 'French', cover: null, isbn: null, pages: null })
+})
+
+test('ranking: title, then language, then cover, author, summary; untitled last', () => {
+  const c = (x: Partial<Candidate>): Candidate => ({ title: 'T', authors: [], pages: null, language: null, cover: null, year: null, summary: null, isbn: null, ...x })
+  const untitled = c({ title: '', language: 'Portuguese', cover: 'u' })
+  const englishCover = c({ title: 'en', language: 'English', cover: 'x' })
+  const ptNoCover = c({ title: 'pt', language: 'Portuguese' })
+  const ptCover = c({ title: 'ptc', language: 'Portuguese', cover: 'y' })
+  const byAuthor = c({ title: 'a', authors: ['J. K. Rówling'] })
+  expect(rankCandidates([untitled, byAuthor, englishCover, ptNoCover, ptCover], { title: '', author: 'rowling', language: 'portuguese' }).map((x) => x.title))
+    .toEqual(['ptc', 'pt', 'en', 'a', ''])
+})
+
+test('every strategy runs: intitle, plain words, series, langRestrict, Open Library', async () => {
+  const f = route(() => json({}), () => json({ docs: [] }))
+  await findDetails({ title: 'Lendários', author: 'Tracy Deonn', series: 'Legendborn', number: '1', language: 'Portuguese' })
+  const urls = f.mock.calls.map((x) => decodeURIComponent(String(x[0])).replace(/\+/g, ' '))
+  expect(urls).toEqual(expect.arrayContaining([
+    expect.stringContaining('q=intitle:"Lendários" inauthor:"Tracy Deonn"&maxResults=5'),
+    expect.stringContaining('q=Lendários Tracy Deonn&'),
+    expect.stringContaining('q=Legendborn 1 Tracy Deonn&'),
+    expect.stringContaining('inauthor:"Tracy Deonn"&maxResults=5&langRestrict=pt'),
+    'https://openlibrary.org/search.json?title=Lendários&author=Tracy Deonn&limit=5',
+  ]))
+  expect(urls).toHaveLength(5)
+})
+
+test('volume-only titles search Open Library by series + number', async () => {
+  const f = route(() => json({}), () => json({ docs: [] }))
+  await findDetails({ title: 'Volume I', author: 'Ohba', series: 'Death Note', number: '1' })
+  const urls = f.mock.calls.map((x) => decodeURIComponent(String(x[0])).replace(/\+/g, ' '))
+  expect(urls).toContain('https://openlibrary.org/search.json?q=Death Note 1&author=Ohba&limit=5')
+  expect(urls.some((u) => u.includes('q=Death Note 1 inauthor:"Ohba"'))).toBe(true)
+})
+
+test('an ISBN only hits the ISBN paths', async () => {
+  const f = route(() => json({}), () => json({ docs: [] }))
+  await findDetails({ title: '978-972-25-1234-5', author: 'X', series: 'S', language: 'English' })
+  expect(f.mock.calls.map((x) => String(x[0]))).toEqual([
+    'https://www.googleapis.com/books/v1/volumes?q=isbn%3A9789722512345&maxResults=5',
+    'https://openlibrary.org/search.json?isbn=9789722512345&limit=5',
+  ])
+})
+
+test('Google refusing still shows Open Library; both failing is an error with the reason', async () => {
+  route(() => refused, () => json({ docs: [{ title: 'Lendários', author_name: ['Tracy Deonn'] }] }))
+  expect(await findDetails({ title: 'Lendários' })).toMatchObject([{ title: 'Lendários', authors: ['Tracy Deonn'] }])
+  vi.restoreAllMocks()
+  route(() => refused, () => { throw new Error('offline') })
+  expect(await findDetails({ title: 'Lendários' })).toEqual({ ok: false, reason: '403: blocked; network error' })
 })

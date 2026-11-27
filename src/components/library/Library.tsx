@@ -106,7 +106,7 @@ export default function Library({ kind, view }: { kind: Kind; view: View }) {
         const group = panel.kind === 'series' ? groupBooks(mine, reads).series.find((s) => s.name === panel.name)
           : toGroup(groupManga(mine, reads).find((s) => s.name === panel.name))
         return group && <SeriesPanel group={group} reads={reads} onClose={() => setPanel(null)} onChange={saveRead}
-          onBought={(u) => saveItems([u])} onError={fail} onAddToSeries={(name, author) => setEditing({ series: name, author, bought: false, series_number: nextInSeries(mine, name) })} />
+          onBought={(u) => saveItems([u])} onError={fail} onAddToSeries={(name, author) => setEditing({ series: name, author, bought: false, series_number: nextInSeries(mine, name), language: mine.find((i) => i.series === name && i.language)?.language })} />
       })()}
       {data && panel?.kind === 'volumes' && (() => {
         const series = groupManga(mine, reads).find((s) => s.name === panel.name)
